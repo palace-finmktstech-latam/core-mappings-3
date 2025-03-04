@@ -107,12 +107,17 @@ def update_mapping_config(config_id: str, config: dict) -> Optional[MappingConfi
     # Preserve creation date
     created_at = MAPPING_CONFIGS[config_id].created_at
     
+    # Create a copy of the config without the 'id' field
+    config_copy = config.copy()
+    if 'id' in config_copy:
+        del config_copy['id']  # Remove the id to avoid the duplicate parameter
+    
     # Update the config
     mapping_config = MappingConfig(
         id=config_id,
         created_at=created_at,
         updated_at=datetime.now(),
-        **config
+        **config_copy  # Now this won't include 'id'
     )
     
     # Store it

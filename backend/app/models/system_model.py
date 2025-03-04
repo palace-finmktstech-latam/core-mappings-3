@@ -154,12 +154,17 @@ def update_system_model(model_id: str, model: dict) -> Optional[SystemModel]:
     # Preserve creation date
     created_at = SYSTEM_MODELS[model_id].created_at
     
+    # Create a copy of the model without the 'id' field
+    model_copy = model.copy()
+    if 'id' in model_copy:
+        del model_copy['id']  # Remove the id to avoid the duplicate parameter
+    
     # Update the model
     system_model = SystemModel(
         id=model_id,
         created_at=created_at,
         updated_at=datetime.now(),
-        **model
+        **model_copy
     )
     
     # Store it

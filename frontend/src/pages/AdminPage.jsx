@@ -186,7 +186,7 @@ const AdminPage = () => {
     <div className="admin-page">
       <h5 className="mb-4 text-end fw-bold">Admin</h5>
       
-      {alert && (
+      {alert && !showModelModal && (
         <Alert variant={alert.type} onClose={() => setAlert(null)} dismissible>
           {alert.message}
         </Alert>
@@ -294,6 +294,12 @@ const AdminPage = () => {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {alert && (
+            <Alert variant={alert.type} onClose={() => setAlert(null)} dismissible className="mb-3">
+              {alert.message}
+            </Alert>
+          )}
+          
           <Tabs defaultActiveKey="basic">
             <Tab eventKey="basic" title="Basic Information">
               <Form className="mt-3">

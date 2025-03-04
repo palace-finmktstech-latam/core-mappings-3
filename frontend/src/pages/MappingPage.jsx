@@ -275,6 +275,7 @@ const MappingPage = () => {
         savedMapping = await createMapping(mappingForm);
         showAlertMessage(`Mapping "${savedMapping.name}" created`, 'success');
       } else {
+        console.log('Updating mapping:', mappingForm);
         savedMapping = await updateMapping(mappingForm.id, mappingForm);
         showAlertMessage(`Mapping "${savedMapping.name}" updated`, 'success');
       }
@@ -284,7 +285,7 @@ const MappingPage = () => {
       setShowMappingModal(false);
     } catch (error) {
       console.error('Error saving mapping:', error);
-      showAlertMessage('Error saving mapping', 'danger');
+      showAlertMessage('Error saving mapping: ' + error, 'danger');
     }
   };
   
@@ -478,7 +479,7 @@ const MappingPage = () => {
     <div className="mapping-page">
       <h5 className="mb-4 text-end fw-bold">Data Mapping</h5>
       
-      {alert && (
+      {alert && !showMappingModal && !showTestModal && (
         <Alert variant={alert.type} onClose={() => setAlert(null)} dismissible>
           {alert.message}
         </Alert>
@@ -645,6 +646,12 @@ const MappingPage = () => {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {alert && (
+            <Alert variant={alert.type} onClose={() => setAlert(null)} dismissible className="mb-3">
+              {alert.message}
+            </Alert>
+          )}
+          
           <Tabs defaultActiveKey="basic">
             <Tab eventKey="basic" title="Basic Information">
               <Form className="mt-3">
@@ -943,6 +950,12 @@ const MappingPage = () => {
           <Modal.Title>Test Mapping: {selectedMapping?.name}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {alert && (
+            <Alert variant={alert.type} onClose={() => setAlert(null)} dismissible className="mb-3">
+              {alert.message}
+            </Alert>
+          )}
+          
           <Form.Group className="mb-3">
             <Form.Label>Input Data (JSON format)</Form.Label>
             <Form.Control

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "fx-forward-v1",
+    "name": "FX Forward",
+    "description": "Standard model for FX Forward trades",
+    "version": "1.0.0",
+    "fields": [
+      {
+        "name": "tradeId",
+        "data_type": "string",
+        "description": "Unique identifier for the trade",
+        "required": true,
+        "constraints": null
+      },
+      {
+        "name": "baseCurrency",
+        "data_type": "string",
+        "description": "Base currency of the FX pair",
+        "required": true,
+        "constraints": null
+      },
+      {
+        "name": "quoteCurrency",
+        "data_type": "string",
+        "description": "Quote currency of the FX pair",
+        "required": true,
+        "constraints": null
+      },
+      {
+        "name": "amount",
+        "data_type": "decimal",
+        "description": "Amount of base currency",
+        "required": true,
+        "constraints": null
+      },
+      {
+        "name": "rate",
+        "data_type": "decimal",
+        "description": "Exchange rate",
+        "required": true,
+        "constraints": null
+      },
+      {
+        "name": "valueDate",
+        "data_type": "date",
+        "description": "Value date for the trade",
+        "required": true,
+        "constraints": null
+      },
+      {
+        "name": "direction",
+        "data_type": "enum",
+        "description": "Trade direction (BUY or SELL)",
+        "required": true,
+        "constraints": {
+          "values": [
+            "BUY",
+            "SELL"
+          ]
+        }
+      }
+    ],
+    "created_at": "2025-03-04 13:35:14.813081",
+    "updated_at": "2025-03-04 13:35:14.813097",
+    "created_by": "system"
+  },
+  {
+    "id": "4597b694-f818-4227-9186-af6e0b877cf1",
+    "name": "Test",
+    "description": "Test",
+    "version": "1.0.0",
+    "fields": [
+      {
+        "name": "Test",
+        "data_type": "string",
+        "description": "Test",
+        "required": true,
+        "constraints": {}
+      },
+      {
+        "name": "new",
+        "data_type": "string",
+        "description": "new field",
+        "required": false,
+        "constraints": {}
+      }
+    ],
+    "created_at": "2025-03-04 14:19:49.380592",
+    "updated_at": "2025-03-04 16:14:24.985245",
+    "created_by": "system"
+  }
+]
