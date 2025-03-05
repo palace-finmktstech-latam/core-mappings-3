@@ -13,6 +13,9 @@ from app.models.mapping import (
 )
 from app.models.system_model import get_system_model
 from app.services.transform_service import transform_data
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -42,7 +45,7 @@ async def create_mapping_config_endpoint(config: dict):
 @router.put("/{config_id}", response_model=MappingConfig)
 async def update_mapping_config_endpoint(config_id: str, config: dict):
     """Update a mapping configuration"""
-    print(f"Updating mapping configuration: {config}")
+    logger.info(f"Updating mapping configuration: {config}")
     # Validate that the system model exists
     system_model = get_system_model(config.get("system_model_id"))
     if not system_model:

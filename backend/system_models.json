@@ -15,23 +15,31 @@
       {
         "name": "baseCurrency",
         "data_type": "string",
-        "description": "Base currency of the FX pair",
+        "description": "Base currency of the FX pair (ISO Code)",
         "required": true,
-        "constraints": null
+        "constraints": {
+          "min_length": "3",
+          "max_length": "3"
+        }
       },
       {
         "name": "quoteCurrency",
         "data_type": "string",
-        "description": "Quote currency of the FX pair",
+        "description": "Quote currency of the FX pair (ISO Code)",
         "required": true,
-        "constraints": null
+        "constraints": {
+          "min_length": "3",
+          "max_length": "3"
+        }
       },
       {
         "name": "amount",
         "data_type": "decimal",
         "description": "Amount of base currency",
         "required": true,
-        "constraints": null
+        "constraints": {
+          "min_value": 1
+        }
       },
       {
         "name": "rate",
@@ -43,9 +51,11 @@
       {
         "name": "valueDate",
         "data_type": "date",
-        "description": "Value date for the trade",
+        "description": "Value date for the trade1",
         "required": true,
-        "constraints": null
+        "constraints": {
+          "date_format": "DD-MM-YYYY"
+        }
       },
       {
         "name": "direction",
@@ -58,35 +68,21 @@
             "SELL"
           ]
         }
+      },
+      {
+        "name": "currencyPair",
+        "data_type": "string",
+        "description": "Currency Pair (now in XXX/XXX format)",
+        "required": true,
+        "constraints": {
+          "min_length": 7,
+          "max_length": 7,
+          "format": "^[A-Z]3/[A-Z]3$"
+        }
       }
     ],
     "created_at": "2025-03-04 13:35:14.813081",
-    "updated_at": "2025-03-04 13:35:14.813097",
-    "created_by": "system"
-  },
-  {
-    "id": "4597b694-f818-4227-9186-af6e0b877cf1",
-    "name": "Test",
-    "description": "Test",
-    "version": "1.0.0",
-    "fields": [
-      {
-        "name": "Test",
-        "data_type": "string",
-        "description": "Test",
-        "required": true,
-        "constraints": {}
-      },
-      {
-        "name": "new",
-        "data_type": "string",
-        "description": "new field",
-        "required": false,
-        "constraints": {}
-      }
-    ],
-    "created_at": "2025-03-04 14:19:49.380592",
-    "updated_at": "2025-03-04 16:14:24.985245",
+    "updated_at": "2025-03-05 18:15:24.967709",
     "created_by": "system"
   }
 ]

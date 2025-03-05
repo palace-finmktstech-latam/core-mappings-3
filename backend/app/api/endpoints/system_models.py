@@ -9,6 +9,9 @@ from app.models.system_model import (
     update_system_model,
     delete_system_model
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -32,6 +35,7 @@ async def create_system_model_endpoint(model: dict):  # Removed Depends(get_admi
 
 @router.put("/{model_id}", response_model=SystemModel)
 async def update_system_model_endpoint(model_id: str, model: dict):  # Removed Depends(get_admin_user)
+    logger.info(f"Updating system model with ID: {model_id}")
     """Update a system model (admin only)"""
     updated_model = update_system_model(model_id, model)
     if not updated_model:

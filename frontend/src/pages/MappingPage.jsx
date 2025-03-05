@@ -42,6 +42,18 @@ const MappingPage = () => {
   // Test data state
   const [testData, setTestData] = useState('{}');
   
+  // Add this new state for editing fields
+  const [editingFieldIndex, setEditingFieldIndex] = useState(null);
+  
+  // Add this new state for editing field form
+  const [fieldForm, setFieldForm] = useState({
+    name: '',
+    data_type: 'string',
+    description: '',
+    required: false,
+    constraints: {}
+  });
+  
   // Fetch data on component mount
   useEffect(() => {
     loadData();
@@ -475,6 +487,142 @@ const MappingPage = () => {
     }
   };
   
+  const handleEditField = (index) => {
+    // Set the field form with the values from the field being edited
+    setFieldForm({
+      ...mappingForm.source_fields[index]
+    });
+    setEditingFieldIndex(index);
+  };
+  
+  const handleUpdateField = () => {
+    // Validate field form
+    if (!fieldForm.name.trim()) {
+      showAlertMessage('Field name is required', 'danger');
+      return;
+    }
+    
+    // Check for duplicate field names (excluding the current field)
+    if (mappingForm.source_fields.some((field, idx) => 
+        idx !== editingFieldIndex && field.name === fieldForm.name)) {
+      showAlertMessage('Field name must be unique', 'danger');
+      return;
+    }
+    
+    // Update the field in the mapping form
+    const updatedFields = [...mappingForm.source_fields];
+    updatedFields[editingFieldIndex] = { ...fieldForm };
+    
+    // Update any mappings that use this field
+    const oldFieldName = mappingForm.source_fields[editingFieldIndex].name;
+    const newFieldName = fieldForm.name;
+    
+    let updatedMappings = [...mappingForm.mappings];
+    if (oldFieldName !== newFieldName) {
+      updatedMappings = mappingForm.mappings.map(mapping => {
+        if (mapping.source_field === oldFieldName) {
+          return { ...mapping, source_field: newFieldName };
+        }
+        return mapping;
+      });
+    }
+    
+    setMappingForm({
+      ...mappingForm,
+      source_fields: updatedFields,
+      mappings: updatedMappings
+    });
+    
+    // Reset field form and editing state
+    setFieldForm({
+      name: '',
+      data_type: 'string',
+      description: '',
+      required: false,
+      constraints: {}
+    });
+    setEditingFieldIndex(null);
+    
+    showAlertMessage('Field updated successfully', 'success');
+  };
+  
+  const handleCancelFieldEdit = () => {
+    setFieldForm({
+      name: '',
+      data_type: 'string',
+      description: '',
+      required: false,
+      constraints: {}
+    });
+    setEditingFieldIndex(null);
+  };
+  
+  const handleFieldFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFieldForm({
+      ...fieldForm,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+  
+  const handleAddField = () => {
+    // Validate field form
+    if (!fieldForm.name.trim()) {
+      showAlertMessage('Field name is required', 'danger');
+      return;
+    }
+    
+    // Check for duplicate field names
+    if (mappingForm.source_fields.some(field => field.name === fieldForm.name)) {
+      showAlertMessage('Field name must be unique', 'danger');
+      return;
+    }
+    
+    // Add field to mapping form
+    setMappingForm({
+      ...mappingForm,
+      source_fields: [...mappingForm.source_fields, { ...fieldForm }]
+    });
+    
+    // Reset field form
+    setFieldForm({
+      name: '',
+      data_type: 'string',
+      description: '',
+      required: false,
+      constraints: {}
+    });
+    
+    showAlertMessage('Field added successfully', 'success');
+  };
+  
+  const handleRemoveField = (index) => {
+    // Check if this field is used in any mappings
+    const fieldName = mappingForm.source_fields[index].name;
+    const isUsedInMapping = mappingForm.mappings.some(mapping => 
+      mapping.source_field === fieldName
+    );
+    
+    if (isUsedInMapping) {
+      showAlertMessage(
+        'This field is used in one or more mappings. Remove those mappings first.',
+        'danger'
+      );
+      return;
+    }
+    
+    // Remove the field
+    const updatedFields = [...mappingForm.source_fields];
+    updatedFields.splice(index, 1);
+    
+    setMappingForm({
+      ...mappingForm,
+      source_fields: updatedFields
+    });
+    
+    showAlertMessage('Field removed successfully', 'success');
+  };
+  
   return (
     <div className="mapping-page">
       <h5 className="mb-4 text-end fw-bold">Data Mapping</h5>
@@ -713,7 +861,7 @@ const MappingPage = () => {
               </Form>
             </Tab>
             
-            <Tab eventKey="source" title="Source Fields">
+            <Tab eventKey="source" title="Upload Fields">
               <div className="mt-3">
                 <Form.Group className="mb-3">
                   <Form.Label>Upload Sample File</Form.Label>
@@ -736,7 +884,7 @@ const MappingPage = () => {
                   </Form.Text>
                 </Form.Group>
                 
-                <h6 className="mb-3">Source Fields:</h6>
+                <h6 className="mb-3">Uploaded Source Fields:</h6>
                 {mappingForm.source_fields.length === 0 ? (
                   <p className="text-muted">
                     No source fields defined yet. Upload a sample file to extract fields.
@@ -749,6 +897,120 @@ const MappingPage = () => {
                           <div>
                             <strong>{field.name}</strong> <span className="text-muted">({field.data_type})</span>
                           </div>
+                        </div>
+                      </ListGroup.Item>
+                    ))}
+                  </ListGroup>
+                )}
+              </div>
+            </Tab>
+            
+            <Tab eventKey="fields" title="Source Fields">
+              <div className="mt-3">
+                <h6 className="mb-3">{editingFieldIndex !== null ? 'Edit Field' : 'Add New Field'}</h6>
+                <Form>
+                  <Row>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Name</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="name"
+                          value={fieldForm.name}
+                          onChange={handleFieldFormChange}
+                          placeholder="e.g., trade_id"
+                        />
+                      </Form.Group>
+                    </Col>
+                    
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Data Type</Form.Label>
+                        <Form.Select
+                          name="data_type"
+                          value={fieldForm.data_type}
+                          onChange={handleFieldFormChange}
+                        >
+                          <option value="string">String</option>
+                          <option value="decimal">Decimal</option>
+                          <option value="integer">Integer</option>
+                          <option value="date">Date</option>
+                          <option value="boolean">Boolean</option>
+                          <option value="enum">Enum</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    
+                    <Col md={4}>
+                      <Form.Group className="mb-3 mt-4">
+                        <Form.Check
+                          type="checkbox"
+                          label="Required"
+                          name="required"
+                          checked={fieldForm.required}
+                          onChange={handleFieldFormChange}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                  
+                  <Form.Group className="mb-3">
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="description"
+                      value={fieldForm.description || ''}
+                      onChange={handleFieldFormChange}
+                      placeholder="Describe this field"
+                    />
+                  </Form.Group>
+                  
+                  {editingFieldIndex !== null ? (
+                    <div>
+                      <Button variant="primary" onClick={handleUpdateField} className="me-2">
+                        Update Field
+                      </Button>
+                      <Button variant="secondary" onClick={handleCancelFieldEdit}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="primary" onClick={handleAddField}>
+                      Add Field
+                    </Button>
+                  )}
+                </Form>
+                
+                <hr />
+                
+                <h6 className="mb-3">Current Fields</h6>
+                {mappingForm.source_fields.length === 0 ? (
+                  <p className="text-muted">No fields added yet. Add fields using the form above.</p>
+                ) : (
+                  <ListGroup>
+                    {mappingForm.source_fields.map((field, index) => (
+                      <ListGroup.Item key={index} className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <strong>{field.name}</strong> <span className="text-muted">({field.data_type})</span>
+                          {field.required && <span className="badge bg-danger ms-2">Required</span>}
+                          <div className="small text-muted">{field.description || 'No description'}</div>
+                        </div>
+                        <div>
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            onClick={() => handleEditField(index)}
+                            className="me-2"
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm" 
+                            onClick={() => handleRemoveField(index)}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       </ListGroup.Item>
                     ))}

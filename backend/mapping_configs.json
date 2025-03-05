@@ -1,15 +1,15 @@
 [
   {
-    "id": "d486cc76-626b-415d-abc5-6546edf063fb",
-    "name": "Test1",
-    "description": "Revert to original",
-    "bank_id": "Bank B",
+    "id": "101bf3cf-414b-4346-b579-977131aa02de",
+    "name": "Test",
+    "description": "Test",
+    "bank_id": "Bank A",
     "system_model_id": "fx-forward-v1",
     "source_fields": [
       {
         "name": "trade_id",
         "data_type": "string",
-        "description": null,
+        "description": "This is a trade ID",
         "required": false,
         "constraints": null
       },
@@ -17,7 +17,7 @@
         "name": "base_currency",
         "data_type": "string",
         "description": null,
-        "required": false,
+        "required": true,
         "constraints": null
       },
       {
@@ -30,25 +30,59 @@
     ],
     "mappings": [
       {
-        "source_field": "trade_id",
-        "target_field": "tradeId",
-        "transformation": null
-      },
-      {
         "source_field": "base_currency",
         "target_field": "baseCurrency",
         "transformation": null
       },
       {
+        "source_field": "trade_id",
+        "target_field": "tradeId",
+        "transformation": null
+      },
+      {
         "source_field": "quote_currency",
         "target_field": "quoteCurrency",
-        "transformation": {
-          "type": "direct",
-          "params": {}
-        }
+        "transformation": null
       }
     ],
-    "created_at": "2025-03-04 14:22:03.180916",
-    "updated_at": "2025-03-04 16:11:10.696403"
+    "created_at": "2025-03-05 15:37:16.507973",
+    "updated_at": "2025-03-05 15:37:16.507973"
+  },
+  {
+    "id": "e9604aac-b01e-4267-85d7-2984b60f1300",
+    "name": "Test 2",
+    "description": "Test 2",
+    "bank_id": "Bank B",
+    "system_model_id": "fx-forward-v1",
+    "source_fields": [
+      {
+        "name": "currency_pair",
+        "data_type": "string",
+        "description": "Currency Pair",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "buy_sell",
+        "data_type": "enum",
+        "description": "Direction",
+        "required": false,
+        "constraints": {}
+      }
+    ],
+    "mappings": [
+      {
+        "source_field": "currency_pair",
+        "target_field": "currencyPair",
+        "transformation": null
+      },
+      {
+        "source_field": "buy_sell",
+        "target_field": "direction",
+        "transformation": null
+      }
+    ],
+    "created_at": "2025-03-05 16:19:38.888407",
+    "updated_at": "2025-03-05 16:19:38.888407"
   }
 ]
