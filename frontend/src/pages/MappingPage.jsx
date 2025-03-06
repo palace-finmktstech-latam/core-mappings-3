@@ -372,29 +372,31 @@ const MappingPage = () => {
             <Row>
               <Col>
                 <Form.Group>
-                  <Form.Label>Source Format</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="e.g., dd/MM/yyyy"
+                  <Form.Label className="text-dark small">Source Format</Form.Label>
+                  <Form.Select
                     value={params.source_format || ''}
                     onChange={(e) => handleUpdateTransformationParams(index, { source_format: e.target.value })}
-                  />
-                  <Form.Text className="text-muted">
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    <option value="">Select a format</option>
+                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                    <option value="YYYY/MM/DD">YYYY/MM/DD</option>
+                    <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+                    <option value="MM-DD-YYYY">MM-DD-YYYY</option>
+                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                  </Form.Select>
+                  <Form.Text className="dark-text">
                     Format of the date in the source data
                   </Form.Text>
                 </Form.Group>
               </Col>
               <Col>
                 <Form.Group>
-                  <Form.Label>Target Format</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="e.g., yyyy-MM-dd"
-                    value={params.target_format || ''}
-                    onChange={(e) => handleUpdateTransformationParams(index, { target_format: e.target.value })}
-                  />
-                  <Form.Text className="text-muted">
-                    Format of the date in the target data
+                  <Form.Label className="text-dark small">Target Format</Form.Label>
+                  <br></br>                 
+                  <Form.Text className="dark-text">
+                    <strong>{getTargetDateFormat(mapping.target_field)}</strong>
                   </Form.Text>
                 </Form.Group>
               </Col>
@@ -471,23 +473,25 @@ const MappingPage = () => {
             <Row>
               <Col>
                 <Form.Group>
-                  <Form.Label>Delimiter</Form.Label>
+                  <Form.Label className="text-dark small">Delimiter</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="e.g., ,"
                     value={params.delimiter || ''}
                     onChange={(e) => handleUpdateTransformationParams(index, { delimiter: e.target.value })}
+                    style={{ color: 'white', fontSize: '0.75rem' }}
                   />
                 </Form.Group>
               </Col>
               <Col>
                 <Form.Group>
-                  <Form.Label>Index (0-based)</Form.Label>
+                  <Form.Label className="text-dark small">Index (0-based)</Form.Label>
                   <Form.Control
                     type="number"
                     placeholder="e.g., 0"
                     value={params.index || 0}
                     onChange={(e) => handleUpdateTransformationParams(index, { index: parseInt(e.target.value, 10) })}
+                    style={{ color: 'white', fontSize: '0.75rem' }}
                   />
                 </Form.Group>
               </Col>
@@ -496,7 +500,7 @@ const MappingPage = () => {
         );
         
       default:
-        return <div className="mt-2 text-muted small">No parameters needed for this transformation type.</div>;
+        return <div className="mt-2 text-dark small">No parameters needed for this transformation type.</div>;
     }
   };
   
@@ -634,6 +638,12 @@ const MappingPage = () => {
     });
     
     showAlertMessage('Field removed successfully', 'success');
+  };
+  
+  const getTargetDateFormat = (fieldName) => {
+    const targetField = getTargetFields().find(field => field.name === fieldName);
+    console.log(targetField);
+    return targetField?.constraints.date_format || 'System default format';
   };
   
   return (
@@ -1068,7 +1078,7 @@ const MappingPage = () => {
                           {mappingForm.mappings.length === 0 ? (
                             <div className="text-center text-muted p-4">
                               <i className="bi bi-arrow-left-right fs-3"></i>
-                              <p className="mt-3">No mappings defined yet.<br />Select source and target fields to create mappings.</p>
+                              <p className="mt-3 small">No mappings defined yet. Select source and target fields to create mappings.</p>
                             </div>
                           ) : (
                             <div className="mappings-container">
@@ -1107,7 +1117,6 @@ const MappingPage = () => {
                                         <option value="format_date">Date Format</option>
                                         <option value="enum_map">Enum Mapping</option>
                                         <option value="split">Split String</option>
-                                        <option value="none">Remove Transformation</option>
                                       </Form.Select>
                                     </Form.Group>
                                     
@@ -1152,7 +1161,7 @@ const MappingPage = () => {
                               return (
                                 <div className="text-center text-muted p-4">
                                   <i className="bi bi-check-circle fs-3"></i>
-                                  <p className="mt-3">All source fields have been mapped.</p>
+                                  <p className="mt-3 small">All source fields have been mapped.</p>
                                 </div>
                               );
                             }
@@ -1223,7 +1232,7 @@ const MappingPage = () => {
                               return (
                                 <div className="text-center text-muted p-4">
                                   <i className="bi bi-check-circle fs-3"></i>
-                                  <p className="mt-3">All target fields have been mapped.</p>
+                                  <p className="mt-3 small">All target fields have been mapped.</p>
                                 </div>
                               );
                             }

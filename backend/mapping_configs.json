@@ -39,7 +39,13 @@
       {
         "source_field": "base_currency",
         "target_field": "baseCurrency",
-        "transformation": null
+        "transformation": {
+          "type": "format_date",
+          "params": {
+            "source_format": "lskdfj",
+            "target_format": "lsdkf"
+          }
+        }
       },
       {
         "source_field": "trade_id",
@@ -58,7 +64,7 @@
       }
     ],
     "created_at": "2025-03-05 15:37:16.507973",
-    "updated_at": "2025-03-06 10:31:08.188645"
+    "updated_at": "2025-03-06 18:20:31.583988"
   },
   {
     "id": "e9604aac-b01e-4267-85d7-2984b60f1300",
@@ -96,5 +102,57 @@
     ],
     "created_at": "2025-03-05 16:19:38.888407",
     "updated_at": "2025-03-05 16:19:38.888407"
+  },
+  {
+    "id": "89353278-f67f-494c-a936-750e27a88d36",
+    "name": "Bank C",
+    "description": "Test",
+    "bank_id": "Bank C",
+    "system_model_id": "fx-forward-v1",
+    "source_fields": [
+      {
+        "name": "Test",
+        "data_type": "string",
+        "description": "Test",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "Test 2",
+        "data_type": "string",
+        "description": "Test 2",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "Value Date",
+        "data_type": "date",
+        "description": "Value date",
+        "required": false,
+        "constraints": {}
+      }
+    ],
+    "mappings": [
+      {
+        "source_field": "Test",
+        "target_field": "tradeId",
+        "transformation": {
+          "type": "direct",
+          "params": {}
+        }
+      },
+      {
+        "source_field": "Value Date",
+        "target_field": "valueDate",
+        "transformation": {
+          "type": "format_date",
+          "params": {
+            "source_format": "yyyy-mm-dd"
+          }
+        }
+      }
+    ],
+    "created_at": "2025-03-06 18:56:35.733553",
+    "updated_at": "2025-03-06 18:58:31.867670"
   }
 ]
