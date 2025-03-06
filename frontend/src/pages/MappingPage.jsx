@@ -483,7 +483,7 @@ const MappingPage = () => {
         );
         
       default:
-        return <div className="mt-2 text-muted">No parameters needed for this transformation type.</div>;
+        return <div className="mt-2 text-muted small">No parameters needed for this transformation type.</div>;
     }
   };
   
@@ -665,7 +665,9 @@ const MappingPage = () => {
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
                           <strong>{mapping.name}</strong>
-                          <div className="small text-muted">Bank: {mapping.bank_id}</div>
+                          <div className="small text-muted">Entity: {mapping.bank_id}</div>
+                          <div className="small text-muted">System Model: {getSystemModelById(mapping.system_model_id)?.name + " v" + getSystemModelById(mapping.system_model_id)?.version || 'Unknown'}</div>
+                          
                         </div>
                         <span className="badge bg-primary rounded-pill">
                           {mapping.mappings.length} mappings
@@ -701,15 +703,20 @@ const MappingPage = () => {
                   <strong>Description:</strong> {selectedMapping.description || 'No description'}
                 </div>
                 <div className="mb-3">
-                  <strong>Bank ID:</strong> {selectedMapping.bank_id}
+                  <strong>Entity ID:</strong> {selectedMapping.bank_id}
                 </div>
                 <div className="mb-3">
                   <strong>System Model:</strong> {
-                    getSystemModelById(selectedMapping.system_model_id)?.name || 'Unknown'
+                    getSystemModelById(selectedMapping.system_model_id)?.name + " v" + getSystemModelById(selectedMapping.system_model_id)?.version || 'Unknown'
                   }
                 </div>
                 <div className="mb-3">
-                  <strong>Last Updated:</strong> {new Date(selectedMapping.updated_at).toLocaleString()}
+                <strong>Last Updated:</strong>
+                  {new Date(selectedMapping.updated_at).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })} {new Date(selectedMapping.updated_at).toLocaleTimeString()}
                 </div>
                 
                 <h6 className="mt-4 mb-3">Field Mappings:</h6>
@@ -861,9 +868,9 @@ const MappingPage = () => {
               </Form>
             </Tab>
             
-            <Tab eventKey="source" title="Upload Fields">
+            <Tab eventKey="fields" title="Source Fields">
               <div className="mt-3">
-                <Form.Group className="mb-3">
+                <Form.Group className="mb-4">
                   <Form.Label>Upload Sample File</Form.Label>
                   <div className="d-flex">
                     <Form.Control
@@ -873,149 +880,149 @@ const MappingPage = () => {
                     <Button 
                       variant="primary" 
                       className="ms-2"
+                      size="sm"
                       onClick={handleUploadFile}
                       disabled={!selectedFile || loading}
                     >
                       {loading ? 'Uploading...' : 'Upload'}
                     </Button>
                   </div>
-                  <Form.Text className="text-muted">
-                    Upload a sample CSV file to extract field names.
+                  <Form.Text className="small text-muted">
+                    Upload a sample CSV file to extract field names, or add fields manually below. 
+                    <br></br><strong>Note: Uploading a sample file will overwrite any existing fields.</strong>
                   </Form.Text>
                 </Form.Group>
+
+                <hr className="mb-4" />
                 
-                <h6 className="mb-3">Uploaded Source Fields:</h6>
-                {mappingForm.source_fields.length === 0 ? (
-                  <p className="text-muted">
-                    No source fields defined yet. Upload a sample file to extract fields.
-                  </p>
-                ) : (
-                  <ListGroup>
-                    {mappingForm.source_fields.map((field, index) => (
-                      <ListGroup.Item key={index}>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <strong>{field.name}</strong> <span className="text-muted">({field.data_type})</span>
-                          </div>
-                        </div>
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                )}
-              </div>
-            </Tab>
-            
-            <Tab eventKey="fields" title="Source Fields">
-              <div className="mt-3">
-                <h6 className="mb-3">{editingFieldIndex !== null ? 'Edit Field' : 'Add New Field'}</h6>
-                <Form>
-                  <Row>
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Name</Form.Label>
+                <Row>
+                  {/* Left column - Current Fields */}
+                  <Col md={6}>
+                    <h6 className="mb-3">Current Fields</h6>
+                    {mappingForm.source_fields.length === 0 ? (
+                      <p className="text-muted small">No fields added yet. Upload a sample file or add fields manually.</p>
+                    ) : (
+                      <ListGroup className="custom-scrollbar" style={{maxHeight: '500px', overflowY: 'auto'}}>
+                        {mappingForm.source_fields.map((field, index) => (
+                          <ListGroup.Item 
+                            key={index} 
+                            action 
+                            active={editingFieldIndex === index}
+                            onClick={() => handleEditField(index)}
+                            className="d-flex justify-content-between align-items-center"
+                          >
+                            <div>
+                              <strong className="text-muted small">{field.name}</strong> <span className="text-muted small">({field.data_type})</span>
+                              {field.required && <span className="badge bg-danger ms-2">Required</span>}
+                              <div className="small text-muted">{field.description || 'No description'}</div>
+                            </div>
+                          </ListGroup.Item>
+                        ))}
+                      </ListGroup>
+                    )}
+                  </Col>
+
+                  {/* Right column - Add/Edit Field Form */}
+                  <Col md={6}>
+                    <div className="d-flex justify-content-end align-items-center mb-3">
+                      {editingFieldIndex !== null && (
+                        <Button 
+                          variant="outline-secondary" 
+                          size="sm" 
+                          onClick={handleCancelFieldEdit}
+                        >
+                          New Field
+                        </Button>
+                      )}
+                    </div>
+
+                    <h6 className="mb-3">{editingFieldIndex !== null ? 'Edit Field' : 'Add New Field'}</h6>
+                      
+
+                    <Form>
+                      <Row>
+                        <Col md={4}>
+                          <Form.Group className="mb-3 small">
+                            <Form.Label>Name</Form.Label>
+                            <Form.Control
+                              type="text"
+                              name="name"
+                              value={fieldForm.name}
+                              onChange={handleFieldFormChange}
+                              placeholder="e.g., trade_id"
+                            />
+                          </Form.Group>
+                        </Col>
+                        
+                        <Col md={4}>
+                          <Form.Group className="mb-3 small">
+                            <Form.Label>Data Type</Form.Label>
+                            <Form.Select
+                              name="data_type"
+                              value={fieldForm.data_type}
+                              onChange={handleFieldFormChange}
+                            >
+                              <option value="string">String</option>
+                              <option value="decimal">Decimal</option>
+                              <option value="integer">Integer</option>
+                              <option value="date">Date</option>
+                              <option value="boolean">Boolean</option>
+                              <option value="enum">Enum</option>
+                            </Form.Select>
+                          </Form.Group>
+                        </Col>
+                        
+                        <Col md={4}>
+                          <Form.Group className="mb-3 mt-4 small">
+                            <Form.Check
+                              type="checkbox"
+                              label="Required"
+                              name="required"
+                              checked={fieldForm.required}
+                              onChange={handleFieldFormChange}
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      
+                      <Form.Group className="mb-3 small">
+                        <Form.Label>Description</Form.Label>
                         <Form.Control
                           type="text"
-                          name="name"
-                          value={fieldForm.name}
+                          name="description"
+                          value={fieldForm.description || ''}
                           onChange={handleFieldFormChange}
-                          placeholder="e.g., trade_id"
+                          placeholder="Describe this field"
                         />
                       </Form.Group>
-                    </Col>
-                    
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Data Type</Form.Label>
-                        <Form.Select
-                          name="data_type"
-                          value={fieldForm.data_type}
-                          onChange={handleFieldFormChange}
-                        >
-                          <option value="string">String</option>
-                          <option value="decimal">Decimal</option>
-                          <option value="integer">Integer</option>
-                          <option value="date">Date</option>
-                          <option value="boolean">Boolean</option>
-                          <option value="enum">Enum</option>
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    
-                    <Col md={4}>
-                      <Form.Group className="mb-3 mt-4">
-                        <Form.Check
-                          type="checkbox"
-                          label="Required"
-                          name="required"
-                          checked={fieldForm.required}
-                          onChange={handleFieldFormChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Description</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="description"
-                      value={fieldForm.description || ''}
-                      onChange={handleFieldFormChange}
-                      placeholder="Describe this field"
-                    />
-                  </Form.Group>
-                  
-                  {editingFieldIndex !== null ? (
-                    <div>
-                      <Button variant="primary" onClick={handleUpdateField} className="me-2">
-                        Update Field
-                      </Button>
-                      <Button variant="secondary" onClick={handleCancelFieldEdit}>
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button variant="primary" onClick={handleAddField}>
-                      Add Field
-                    </Button>
-                  )}
-                </Form>
-                
-                <hr />
-                
-                <h6 className="mb-3">Current Fields</h6>
-                {mappingForm.source_fields.length === 0 ? (
-                  <p className="text-muted">No fields added yet. Add fields using the form above.</p>
-                ) : (
-                  <ListGroup>
-                    {mappingForm.source_fields.map((field, index) => (
-                      <ListGroup.Item key={index} className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <strong>{field.name}</strong> <span className="text-muted">({field.data_type})</span>
-                          {field.required && <span className="badge bg-danger ms-2">Required</span>}
-                          <div className="small text-muted">{field.description || 'No description'}</div>
-                        </div>
-                        <div>
-                          <Button 
-                            variant="outline-primary" 
-                            size="sm" 
-                            onClick={() => handleEditField(index)}
-                            className="me-2"
-                          >
-                            Edit
+                      
+                      <div className="d-flex justify-content-end">
+                        {editingFieldIndex !== null ? (
+                          <>
+                            <Button variant="primary" size="sm" onClick={handleUpdateField} className="me-2">
+                              Update Field
+                            </Button>
+                            <Button 
+                              variant="outline-danger" 
+                              size="sm" 
+                              onClick={() => {
+                                handleRemoveField(editingFieldIndex);
+                                handleCancelFieldEdit();
+                              }}
+                              className="me-2"
+                            >
+                              Remove Field
+                            </Button>                            
+                          </>
+                        ) : (
+                          <Button variant="primary" size="sm" onClick={handleAddField}>
+                            Add Field
                           </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            size="sm" 
-                            onClick={() => handleRemoveField(index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                )}
+                        )}
+                      </div>
+                    </Form>
+                  </Col>
+                </Row>
               </div>
             </Tab>
             
@@ -1028,7 +1035,7 @@ const MappingPage = () => {
                 ) : (
                 <div className="mapping-interface">
                     <h6 className="mb-3">Create Field Mappings:</h6>
-                    <p className="text-muted mb-4">
+                    <p className="text-muted mb-4 small">
                     To create a mapping, drag a source field from the left column and drop it onto a target field in the right column.
                     You can also click on a source field and then click on the corresponding target field to create a mapping.
                     </p>
@@ -1037,7 +1044,7 @@ const MappingPage = () => {
                     <Col md={5}>
                         <Card>
                         <Card.Header>
-                            <h6 className="mb-0">Source Fields (Bank Format)</h6>
+                            <h6 className="mb-0 small">Source Fields</h6>
                         </Card.Header>
                         <Card.Body style={{ maxHeight: '400px', overflow: 'auto' }}>
                             <ListGroup>
@@ -1054,8 +1061,8 @@ const MappingPage = () => {
                                 className={highlightedSourceIndex === index ? "border-primary" : ""}
                                 >
                                 <div className="d-flex justify-content-between align-items-center">
-                                    <span>{field.name}</span>
-                                    <span className="badge bg-secondary">{field.data_type}</span>
+                                    <span className="text-muted small">{field.name}</span>
+                                    <span className="badge bg-secondary small">{field.data_type}</span>
                                 </div>
                                 </ListGroup.Item>
                             ))}
@@ -1092,7 +1099,7 @@ const MappingPage = () => {
                         ) : (
                             <div className="text-center text-muted">
                             <i className="bi bi-arrow-left-right fs-4"></i>
-                            <div className="mt-2">Select fields to map</div>
+                            <div className="mt-3 small">Select fields to map</div>
                             </div>
                         )}
                         </div>
@@ -1101,7 +1108,7 @@ const MappingPage = () => {
                     <Col md={5}>
                         <Card>
                         <Card.Header>
-                            <h6 className="mb-0">Target Fields (Your System Format)</h6>
+                            <h6 className="mb-0 small">Target Fields</h6>
                         </Card.Header>
                         <Card.Body style={{ maxHeight: '400px', overflow: 'auto' }}>
                             <ListGroup>
@@ -1127,8 +1134,8 @@ const MappingPage = () => {
                                 className={highlightedTargetIndex === index ? "border-primary" : ""}
                                 >
                                 <div className="d-flex justify-content-between align-items-center">
-                                    <span>{field.name}</span>
-                                    <span className="badge bg-secondary">{field.data_type}</span>
+                                    <span className="text-muted small">{field.name}</span>
+                                    <span className="badge bg-secondary small">{field.data_type}</span>
                                 </div>
                                 </ListGroup.Item>
                             ))}

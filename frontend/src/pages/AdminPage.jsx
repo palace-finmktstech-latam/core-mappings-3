@@ -771,18 +771,6 @@ const AdminPage = () => {
                       {selectedFieldIndex !== null && (
                         <>
                           <Button 
-                            variant="outline-danger" 
-                            size="sm" 
-                            onClick={() => {
-                              handleRemoveField(selectedFieldIndex);
-                              setSelectedFieldIndex(null);
-                              handleCancelFieldEdit();
-                            }}
-                            className="me-2"
-                          >
-                            Remove Field
-                          </Button>
-                          <Button 
                             variant="outline-secondary" 
                             size="sm" 
                             onClick={() => {
@@ -1044,8 +1032,20 @@ const AdminPage = () => {
                       
                       {selectedFieldIndex !== null ? (
                         <div className="d-flex justify-content-end">
-                          <Button variant="primary" size="sm" onClick={handleUpdateField}>
+                          <Button variant="primary" size="sm" onClick={handleUpdateField} className="me-2">
                             Update Field
+                          </Button>
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm" 
+                            onClick={() => {
+                              handleRemoveField(selectedFieldIndex);
+                              setSelectedFieldIndex(null);
+                              handleCancelFieldEdit();
+                            }}
+                            className="me-2"
+                          >
+                            Remove Field
                           </Button>
                         </div>
                       ) : (
