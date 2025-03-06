@@ -25,6 +25,8 @@ const MappingPage = () => {
   const [selectedTargetField, setSelectedTargetField] = useState(null);
   const [highlightedSourceIndex, setHighlightedSourceIndex] = useState(null);
   const [highlightedTargetIndex, setHighlightedTargetIndex] = useState(null);
+  const [selectedMappingField, setSelectedMappingField] = useState(null);
+  const [selectedFieldType, setSelectedFieldType] = useState(null); // 'source' or 'target'
   
   // Form state
   const [mappingForm, setMappingForm] = useState({
@@ -301,6 +303,17 @@ const MappingPage = () => {
     }
   };
   
+  const handleFieldSelection = (field, type) => {
+    setSelectedMappingField(field.name);
+    setSelectedFieldType(type);
+    
+    // Clear existing selection states if needed
+    setSelectedSourceField(null);
+    setSelectedTargetField(null);
+    setHighlightedSourceIndex(null);
+    setHighlightedTargetIndex(null);
+  };
+
   const handleShowTestModal = () => {
     if (!selectedMapping) return;
     
@@ -654,7 +667,7 @@ const MappingPage = () => {
               {mappings.length === 0 ? (
                 <p className="text-muted">No mappings found. Create one to get started.</p>
               ) : (
-                <ListGroup>
+                <ListGroup className="custom-scrollbar">
                   {mappings.map(mapping => (
                     <ListGroup.Item 
                       key={mapping.id}
@@ -1027,179 +1040,234 @@ const MappingPage = () => {
             </Tab>
             
             <Tab eventKey="mapping" title="Field Mappings">
-            <div className="mt-3">
-                {(mappingForm.source_fields.length === 0 || !mappingForm.system_model_id) ? (
-                <Alert variant="warning">
-                    Please define source fields and select a system model before creating mappings.
-                </Alert>
+              <div className="mt-3">
+                {loading ? (
+                  <div className="text-center p-5">
+                    <Spinner animation="border" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                  </div>
                 ) : (
-                <div className="mapping-interface">
-                    <h6 className="mb-3">Create Field Mappings:</h6>
-                    <p className="text-muted mb-4 small">
-                    To create a mapping, drag a source field from the left column and drop it onto a target field in the right column.
-                    You can also click on a source field and then click on the corresponding target field to create a mapping.
-                    </p>
-                    
-                    <Row>
-                    <Col md={5}>
-                        <Card>
-                        <Card.Header>
-                            <h6 className="mb-0 small">Source Fields</h6>
-                        </Card.Header>
-                        <Card.Body style={{ maxHeight: '400px', overflow: 'auto' }}>
-                            <ListGroup>
-                            {mappingForm.source_fields.map((field, index) => (
-                                <ListGroup.Item 
-                                key={index} 
-                                action
-                                onClick={() => {
-                                    // Set this as the selected source field for mapping
-                                    setSelectedSourceField(field);
-                                    // Visual indication
-                                    setHighlightedSourceIndex(index);
-                                }}
-                                className={highlightedSourceIndex === index ? "border-primary" : ""}
-                                >
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <span className="text-muted small">{field.name}</span>
-                                    <span className="badge bg-secondary small">{field.data_type}</span>
-                                </div>
-                                </ListGroup.Item>
-                            ))}
-                            </ListGroup>
-                        </Card.Body>
-                        </Card>
-                    </Col>
-                    
-                    <Col md={2} className="d-flex align-items-center justify-content-center">
-                        <div className="mapping-arrows">
-                        {selectedSourceField && !selectedTargetField ? (
-                            <div className="text-center mb-2">
-                            <div className="arrow-right"></div>
-                            <small className="text-muted">Select a target field</small>
-                            </div>
-                        ) : selectedTargetField && !selectedSourceField ? (
-                            <div className="text-center mb-2">
-                            <div className="arrow-left"></div>
-                            <small className="text-muted">Select a source field</small>
-                            </div>
-                        ) : selectedSourceField && selectedTargetField ? (
-                            <Button 
-                            variant="primary" 
-                            onClick={() => {
-                                handleAddMapping(selectedSourceField, selectedTargetField);
-                                setSelectedSourceField(null);
-                                setSelectedTargetField(null);
-                                setHighlightedSourceIndex(null);
-                                setHighlightedTargetIndex(null);
+                  <Row>
+                    {/* Column 1: Current Mappings */}
+                    <Col md={4}>
+                      <Card className="h-100">
+                        <Card.Header className="bg-dark text-white d-flex justify-content-between align-items-center">
+                          <h6 className="mb-0 small">Current Mappings</h6>
+                          <Form.Control 
+                            type="text" 
+                            placeholder="Search mappings..." 
+                            size="sm"
+                            className="form-control form-control-sm w-50"
+                            onChange={(e) => {
+                              // Add search functionality here
                             }}
-                            >
-                            Create Mapping
-                            </Button>
-                        ) : (
-                            <div className="text-center text-muted">
-                            <i className="bi bi-arrow-left-right fs-4"></i>
-                            <div className="mt-3 small">Select fields to map</div>
-                            </div>
-                        )}
-                        </div>
-                    </Col>
-                    
-                    <Col md={5}>
-                        <Card>
-                        <Card.Header>
-                            <h6 className="mb-0 small">Target Fields</h6>
+                          />
                         </Card.Header>
-                        <Card.Body style={{ maxHeight: '400px', overflow: 'auto' }}>
-                            <ListGroup>
-                            {getTargetFields().map((field, index) => (
-                                <ListGroup.Item 
-                                key={index} 
-                                action
-                                onClick={() => {
-                                    // Set this as the selected target field for mapping
-                                    setSelectedTargetField(field);
-                                    // Visual indication
-                                    setHighlightedTargetIndex(index);
+                        <Card.Body className="custom-scrollbar" style={{ maxHeight: '600px', overflow: 'auto' }}>
+                          {mappingForm.mappings.length === 0 ? (
+                            <div className="text-center text-muted p-4">
+                              <i className="bi bi-arrow-left-right fs-3"></i>
+                              <p className="mt-3">No mappings defined yet.<br />Select source and target fields to create mappings.</p>
+                            </div>
+                          ) : (
+                            <div className="mappings-container">
+                              {mappingForm.mappings.map((mapping, index) => (
+                                <Card key={index} className="mb-3 mapping-card border-light">
+                                  <Card.Header className="d-flex justify-content-between align-items-center py-2">
+                                    <div className="small">
+                                      <span className="source-field fw-bold">{mapping.source_field}</span>
+                                      <span className="bi bi-arrow-right mx-2">-></span>
+                                      <span className="target-field fw-bold">{mapping.target_field}</span>
+                                    </div>
+                                    <Button 
+                                      variant="outline-danger" 
+                                      size="sm"
+                                      className="btn-sm py-0 px-1"
+                                      onClick={() => handleRemoveMapping(index)}
+                                    >
+                                      <i className="bi bi-x"></i>
+                                    </Button>
+                                  </Card.Header>
+                                  <Card.Body className="py-2">
+                                    <Form.Group className="mb-2">
+                                      <Form.Label className="small mb-1">Transformation</Form.Label>
+                                      <Form.Select
+                                        size="sm"
+                                        value={mapping.transformation ? mapping.transformation.type : 'direct'}
+                                        onChange={(e) => {
+                                          if (e.target.value === 'none') {
+                                            handleRemoveTransformation(index);
+                                          } else {
+                                            handleAddTransformation(index, e.target.value);
+                                          }
+                                        }}
+                                      >
+                                        <option value="direct">Direct Mapping</option>
+                                        <option value="format_date">Date Format</option>
+                                        <option value="enum_map">Enum Mapping</option>
+                                        <option value="split">Split String</option>
+                                        <option value="none">Remove Transformation</option>
+                                      </Form.Select>
+                                    </Form.Group>
                                     
-                                    // If we already have a source field selected, create the mapping automatically
-                                    if (selectedSourceField) {
-                                    handleAddMapping(selectedSourceField, field);
-                                    setSelectedSourceField(null);
-                                    setSelectedTargetField(null);
-                                    setHighlightedSourceIndex(null);
-                                    setHighlightedTargetIndex(null);
-                                    }
-                                }}
-                                className={highlightedTargetIndex === index ? "border-primary" : ""}
-                                >
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <span className="text-muted small">{field.name}</span>
-                                    <span className="badge bg-secondary small">{field.data_type}</span>
-                                </div>
-                                </ListGroup.Item>
-                            ))}
-                            </ListGroup>
+                                    {mapping.transformation && (
+                                      <div className="bg-light p-2 rounded small">
+                                        {renderTransformationForm(mapping, index)}
+                                      </div>
+                                    )}
+                                  </Card.Body>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
                         </Card.Body>
-                        </Card>
+                      </Card>
                     </Col>
-                    </Row>
                     
-                    <hr className="my-4" />
-                    
-                    <h6 className="mb-3">Current Mappings:</h6>
-                    {mappingForm.mappings.length === 0 ? (
-                    <p className="text-muted">No mappings defined yet. Create mappings using the interface above.</p>
-                    ) : (
-                    <div className="mappings-container">
-                        {mappingForm.mappings.map((mapping, index) => (
-                        <Card key={index} className="mb-3 mapping-card">
-                            <Card.Header className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span className="source-field">{mapping.source_field}</span>
-                                <i className="bi bi-arrow-right mx-2"></i>
-                                <span className="target-field">{mapping.target_field}</span>
-                            </div>
-                            <Button 
-                                variant="outline-danger" 
-                                size="sm"
-                                onClick={() => handleRemoveMapping(index)}
-                            >
-                                Remove
-                            </Button>
-                            </Card.Header>
-                            <Card.Body>
-                            <div className="mb-3">
-                                <Form.Group>
-                                <Form.Label>Transformation Type</Form.Label>
-                                <Form.Select
-                                    value={mapping.transformation ? mapping.transformation.type : 'direct'}
-                                    onChange={(e) => {
-                                    if (e.target.value === 'none') {
-                                        handleRemoveTransformation(index);
-                                    } else {
-                                        handleAddTransformation(index, e.target.value);
-                                    }
-                                    }}
-                                >
-                                    <option value="direct">Direct Mapping (No Transformation)</option>
-                                    <option value="format_date">Date Format Conversion</option>
-                                    <option value="enum_map">Enum Value Mapping</option>
-                                    <option value="split">Split String</option>
-                                    <option value="none">Remove Transformation</option>
-                                </Form.Select>
-                                </Form.Group>
-                            </div>
+                    {/* Column 2: Source Fields */}
+                    <Col md={4}>
+                      <Card className="h-100">
+                        <Card.Header className="bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h6 className="mb-0 small">Source Fields</h6>
+                          <Form.Control 
+                            type="text" 
+                            placeholder="Search fields..." 
+                            size="xs"
+                            className="form-control form-control-sm w-50 small"
+                            onChange={(e) => {
+                              // Add search functionality here
+                            }}
+                          />
+                        </Card.Header>
+                        <Card.Body style={{ maxHeight: '600px', overflow: 'auto' }}>
+                          {/* Filter out source fields that are already mapped */}
+                          {(() => {
+                            const mappedSourceFields = mappingForm.mappings.map(m => m.source_field);
+                            const unmappedSourceFields = mappingForm.source_fields.filter(
+                              field => !mappedSourceFields.includes(field.name)
+                            );
                             
-                            {mapping.transformation && renderTransformationForm(mapping, index)}
-                            </Card.Body>
-                        </Card>
-                        ))}
-                    </div>
-                    )}
-                </div>
+                            if (unmappedSourceFields.length === 0) {
+                              return (
+                                <div className="text-center text-muted p-4">
+                                  <i className="bi bi-check-circle fs-3"></i>
+                                  <p className="mt-3">All source fields have been mapped.</p>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <ListGroup>
+                                {unmappedSourceFields.map((field, index) => (
+                                  <ListGroup.Item 
+                                    key={index} 
+                                    action
+                                    onClick={() => {
+                                      setSelectedSourceField(field);
+                                      setHighlightedSourceIndex(index);
+                                      
+                                      if (selectedTargetField) {
+                                        handleAddMapping(field, selectedTargetField);
+                                        setSelectedSourceField(null);
+                                        setSelectedTargetField(null);
+                                        setHighlightedSourceIndex(null);
+                                        setHighlightedTargetIndex(null);
+                                      }
+                                    }}
+                                    className={`py-2 ${highlightedSourceIndex === index ? "border-primary" : ""}`}
+                                  >
+                                    <div className="d-flex justify-content-between align-items-center">
+                                      <div>
+                                        <div className="fw-bold small">{field.name}</div>
+                                        <div className="text-muted small">{field.data_type}</div>
+                                      </div>
+                                      {highlightedSourceIndex === index && (
+                                        <i className="bi bi-check-circle-fill text-primary"></i>
+                                      )}
+                                    </div>
+                                  </ListGroup.Item>
+                                ))}
+                              </ListGroup>
+                            );
+                          })()}
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                    
+                    {/* Column 3: Target Fields */}
+                    <Col md={4}>
+                      <Card className="h-100">
+                        <Card.Header className="bg-dark text-white d-flex justify-content-between align-items-center">
+                          <h6 className="mb-0 small">Target Fields</h6>
+                          <Form.Control 
+                            type="text" 
+                            placeholder="Search fields..." 
+                            size="sm"
+                            className="form-control form-control-sm w-50"
+                            onChange={(e) => {
+                              // Add search functionality here
+                            }}
+                          />
+                        </Card.Header>
+                        <Card.Body style={{ maxHeight: '600px', overflow: 'auto' }}>
+                          {/* Filter out target fields that are already mapped */}
+                          {(() => {
+                            const mappedTargetFields = mappingForm.mappings.map(m => m.target_field);
+                            const targetFields = getTargetFields();
+                            const unmappedTargetFields = targetFields.filter(
+                              field => !mappedTargetFields.includes(field.name)
+                            );
+                            
+                            if (unmappedTargetFields.length === 0) {
+                              return (
+                                <div className="text-center text-muted p-4">
+                                  <i className="bi bi-check-circle fs-3"></i>
+                                  <p className="mt-3">All target fields have been mapped.</p>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <ListGroup>
+                                {unmappedTargetFields.map((field, index) => (
+                                  <ListGroup.Item 
+                                    key={index} 
+                                    action
+                                    onClick={() => {
+                                      setSelectedTargetField(field);
+                                      setHighlightedTargetIndex(index);
+                                      
+                                      if (selectedSourceField) {
+                                        handleAddMapping(selectedSourceField, field);
+                                        setSelectedSourceField(null);
+                                        setSelectedTargetField(null);
+                                        setHighlightedSourceIndex(null);
+                                        setHighlightedTargetIndex(null);
+                                      }
+                                    }}
+                                    className={`py-2 ${highlightedTargetIndex === index ? "border-primary" : ""}`}
+                                  >
+                                    <div className="d-flex justify-content-between align-items-center">
+                                      <div>
+                                        <div className="fw-bold small">{field.name}</div>
+                                        <div className="text-muted small">{field.data_type}</div>
+                                      </div>
+                                      {highlightedTargetIndex === index && (
+                                        <i className="bi bi-check-circle-fill text-primary"></i>
+                                      )}
+                                    </div>
+                                  </ListGroup.Item>
+                                ))}
+                              </ListGroup>
+                            );
+                          })()}
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  </Row>
                 )}
-            </div>
+              </div>
             </Tab>            
           </Tabs>
         </Modal.Body>
