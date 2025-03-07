@@ -57,6 +57,11 @@ const MappingPage = () => {
     constraints: {}
   });
   
+  // Add these state variables near your other state declarations
+  const [mappingSearch, setMappingSearch] = useState('');
+  const [sourceFieldSearch, setSourceFieldSearch] = useState('');
+  const [targetFieldSearch, setTargetFieldSearch] = useState('');
+  
   // Fetch data on component mount
   useEffect(() => {
     loadData();
@@ -248,7 +253,9 @@ const MappingPage = () => {
         ...updatedMappings[mappingIndex].transformation.params,
         ...params
       };
-      
+    
+      console.log("updatedMappings: ",updatedMappings);
+
       setMappingForm({
         ...mappingForm,
         mappings: updatedMappings
@@ -290,7 +297,6 @@ const MappingPage = () => {
         savedMapping = await createMapping(mappingForm);
         showAlertMessage(`Mapping "${savedMapping.name}" created`, 'success');
       } else {
-        console.log('Updating mapping:', mappingForm);
         savedMapping = await updateMapping(mappingForm.id, mappingForm);
         showAlertMessage(`Mapping "${savedMapping.name}" updated`, 'success');
       }
@@ -440,7 +446,6 @@ const MappingPage = () => {
               // Get target field to find available enum values
               const targetField = getTargetFields().find(field => field.name === mapping.target_field);
               const enumValues = targetField?.constraints?.values || [];
-              console.log("enumValues: ",enumValues);
               
               return (
                 <Row key={i} className="mb-2">
@@ -571,10 +576,10 @@ const MappingPage = () => {
                   size="sm"
                   style={{ fontSize: '0.75rem' }}
                   onClick={() => {
-                    // Here we'll save the date mappings
-                    // This can just close the current edit mode or perform additional validation
-                    // For now it's essentially confirming the current state of the mappings
                     
+                    handleUpdateTransformationParams(index, { delimiter: params.delimiter })
+                    handleUpdateTransformationParams(index, { index: params.index })
+
                     // You could add a visual confirmation
                     showAlertMessage('Split String transformation applied but not saved. Press Save to save all changes.', 'success');
 
@@ -623,10 +628,9 @@ const MappingPage = () => {
                     size="sm"
                     style={{ fontSize: '0.75rem' }}
                     onClick={() => {
-                      // Here we'll save the date mappings
-                      // This can just close the current edit mode or perform additional validation
-                      // For now it's essentially confirming the current state of the mappings
                       
+                      handleUpdateTransformationParams(index, { count: params.count })
+
                       // You could add a visual confirmation
                       showAlertMessage('Left string transformation applied but not saved. Press Save to save all changes.', 'success');
 
@@ -675,10 +679,8 @@ const MappingPage = () => {
                     size="sm"
                     style={{ fontSize: '0.75rem' }}
                     onClick={() => {
-                      // Here we'll save the date mappings
-                      // This can just close the current edit mode or perform additional validation
-                      // For now it's essentially confirming the current state of the mappings
                       
+                      handleUpdateTransformationParams(index, { count: params.count })
                       // You could add a visual confirmation
                       showAlertMessage('Right string transformation applied but not saved. Press Save to save all changes.', 'success');
 
@@ -755,10 +757,10 @@ const MappingPage = () => {
                   size="sm"
                   style={{ fontSize: '0.75rem' }}
                   onClick={() => {
-                    // Here we'll save the date mappings
-                    // This can just close the current edit mode or perform additional validation
-                    // For now it's essentially confirming the current state of the mappings
                     
+                    handleUpdateTransformationParams(index, { startPosition: params.startPosition })
+                    handleUpdateTransformationParams(index, { length: params.length })
+
                     // You could add a visual confirmation
                     showAlertMessage('Substring transformation applied but not saved. Press Save to save all changes.', 'success');
 
@@ -811,10 +813,10 @@ const MappingPage = () => {
                     size="sm"
                     style={{ fontSize: '0.75rem' }}
                     onClick={() => {
-                      // Here we'll save the date mappings
-                      // This can just close the current edit mode or perform additional validation
-                      // For now it's essentially confirming the current state of the mappings
-                      
+                    
+                      handleUpdateTransformationParams(index, { find: params.find })
+                      handleUpdateTransformationParams(index, { replace: params.replace })
+
                       // You could add a visual confirmation
                       showAlertMessage('Replace string transformation applied but not saved. Press Save to save all changes.', 'success');
 
@@ -868,10 +870,9 @@ const MappingPage = () => {
                     size="sm"
                     style={{ fontSize: '0.75rem' }}
                     onClick={() => {
-                      // Here we'll save the date mappings
-                      // This can just close the current edit mode or perform additional validation
-                      // For now it's essentially confirming the current state of the mappings
-                      
+                      handleUpdateTransformationParams(index, { pattern: params.pattern })
+                      handleUpdateTransformationParams(index, { group: params.group })
+
                       // You could add a visual confirmation
                       showAlertMessage('Regex string transformation applied but not saved. Press Save to save all changes.', 'success');
 
@@ -911,10 +912,9 @@ const MappingPage = () => {
                     size="sm"
                     style={{ fontSize: '0.75rem' }}
                     onClick={() => {
-                      // Here we'll save the date mappings
-                      // This can just close the current edit mode or perform additional validation
-                      // For now it's essentially confirming the current state of the mappings
                       
+                      handleUpdateTransformationParams(index, { caseType: params.caseType || 'upper' });
+
                       // You could add a visual confirmation
                       showAlertMessage('Regex string transformation applied but not saved. Press Save to save all changes.', 'success');
 
@@ -1251,18 +1251,19 @@ const MappingPage = () => {
       
       {/* Mapping Edit/Create Modal */}
       <Modal show={showMappingModal} onHide={() => setShowMappingModal(false)} size="xl">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {modalMode === 'create' ? 'Create New Mapping' : `Edit ${mappingForm.name}`}
-          </Modal.Title>
+        <Modal.Header closeButton className="d-flex justify-content-between align-items-center">
+          <div className="d-flex align-items-center">
+            <Modal.Title className="me-2">
+              {modalMode === 'create' ? 'Create New Mapping' : `Edit ${mappingForm.name}`}
+            </Modal.Title>
+            {alert && (
+              <Alert variant={alert.type} className="mb-0 small p-2" style={{ marginLeft: '10px' }}>
+                {alert.message}
+              </Alert>
+            )}
+          </div>
         </Modal.Header>
         <Modal.Body>
-          {alert && (
-            <Alert variant={alert.type} onClose={() => setAlert(null)} dismissible className="mb-3">
-              {alert.message}
-            </Alert>
-          )}
-          
           <Tabs defaultActiveKey="basic">
             <Tab eventKey="basic" title="Basic Information">
               <Form className="mt-3">
@@ -1502,9 +1503,8 @@ const MappingPage = () => {
                             placeholder="Search mappings..." 
                             size="sm"
                             className="form-control form-control-sm w-50"
-                            onChange={(e) => {
-                              // Add search functionality here
-                            }}
+                            value={mappingSearch}
+                            onChange={(e) => setMappingSearch(e.target.value)}
                           />
                         </Card.Header>
                         <Card.Body className="custom-scrollbar" style={{ maxHeight: '600px', overflow: 'auto' }}>
@@ -1515,139 +1515,138 @@ const MappingPage = () => {
                             </div>
                           ) : (
                             <div className="mappings-container">
-                              {mappingForm.mappings.map((mapping, index) => (
-                                <Card key={index} className="mb-3 mapping-card border-light">
-                                  <Card.Header className="d-flex justify-content-between align-items-center py-2">
-                                    <div className="small">
-                                      <span className="source-field fw-bold">{mapping.source_field}</span>
-                                      <span className="bi bi-arrow-right mx-2">-></span>
-                                      <span className="target-field fw-bold">{mapping.target_field}</span>
-                                    </div>
-                                    <Button 
-                                      variant="outline-danger" 
-                                      size="sm"
-                                      className="btn-sm py-0 px-1"
-                                      onClick={() => handleRemoveMapping(index)}
-                                    >
-                                      x
-                                    </Button>
-                                  </Card.Header>
-                                  <Card.Body className="py-2">
-                                    <Form.Group className="mb-2">
-                                      <Form.Label className="small mb-1">Transformation</Form.Label>
-                                      <div className="d-flex">
-                                        <Form.Select
-                                          size="sm"
-                                          value={mapping.transformation ? mapping.transformation.type : 'direct'}
-                                          onChange={(e) => {
-                                            if (e.target.value === 'none') {
-                                              handleRemoveTransformation(index);
-                                              setVisibleTransformationForm(null); // Hide the form
-                                            } else {
-                                              handleAddTransformation(index, e.target.value);                                      
-                                            }
-                                          }}
-                                        >
-                                          <option value="direct">Direct Mapping</option>
-                                          {/* Only show date option if target field is a date */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            console.log("targetField: ",targetField);
-                                            return targetField?.data_type === 'date' ? (
-                                              <option value="format_date">Date Format</option>
-                                            ) : null;
-                                          })()}
-                                          {/* Only show enum_map option if target field is an enum */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            return targetField?.data_type === 'enum' ? (
-                                              <option value="enum_map">Enum Mapping</option>
-                                            ) : null;
-                                          })()}
-                                          {/* Only show split string option if target field is a string */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            console.log("targetField: ",targetField);
-                                            return targetField?.data_type === 'string' ? (
-                                              <option value="split">Split String</option>
-                                            ) : null;
-                                          })()}
-                                          {/* Only show left option if target field is a string */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            console.log("targetField: ",targetField);
-                                            return targetField?.data_type === 'string' ? (
-                                              <option value="left">Left (First N Characters)</option>
-                                            ) : null;
-                                          })()}
-                                          {/* Only show right option if target field is a string */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            console.log("targetField: ",targetField);
-                                            return targetField?.data_type === 'string' ? (
-                                              <option value="right">Right (Last N Characters)</option>
-                                            ) : null;
-                                          })()}
-                                          {/* Only show substring option if target field is a string */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            console.log("targetField: ",targetField);
-                                            return targetField?.data_type === 'string' ? (
-                                              <option value="substring">Substring (From/To)</option>
-                                            ) : null;
-                                          })()}
-                                          {/* Only show replace option if target field is a string */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            console.log("targetField: ",targetField);
-                                            return targetField?.data_type === 'string' ? (
-                                              <option value="replace">Replace Text</option>
-                                            ) : null;
-                                          })()}
-                                          {/* Only show regex option if target field is a string */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            console.log("targetField: ",targetField);
-                                            return targetField?.data_type === 'string' ? (
-                                              <option value="regex">Regex Extract</option>
-                                            ) : null;
-                                          })()}
-                                          {/* Only show change case option if target field is a string */}
-                                          {(() => {
-                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
-                                            console.log("targetField: ",targetField);
-                                            return targetField?.data_type === 'string' ? (
-                                              <option value="case">Change Case</option>
-                                            ) : null;
-                                          })()}
-                                        </Form.Select>
-                                        {mapping.transformation && (
-                                          <Button
-                                            variant="outline-secondary"
+                              {mappingForm.mappings
+                                .filter(mapping => {
+                                  if (!mappingSearch) return true;
+                                  const searchTerm = mappingSearch.toLowerCase();
+                                  return mapping.source_field.toLowerCase().includes(searchTerm) || 
+                                         mapping.target_field.toLowerCase().includes(searchTerm);
+                                })
+                                .map((mapping, index) => (
+                                  <Card key={index} className="mb-3 mapping-card border-light">
+                                    <Card.Header className="d-flex justify-content-between align-items-center py-2">
+                                      <div className="small">
+                                        <span className="source-field fw-bold">{mapping.source_field}</span>
+                                        <span className="bi bi-arrow-right mx-2">-></span>
+                                        <span className="target-field fw-bold">{mapping.target_field}</span>
+                                      </div>
+                                      <Button 
+                                        variant="outline-danger" 
+                                        size="sm"
+                                        className="btn-sm py-0 px-1"
+                                        onClick={() => handleRemoveMapping(index)}
+                                      >
+                                        x
+                                      </Button>
+                                    </Card.Header>
+                                    <Card.Body className="py-2">
+                                      <Form.Group className="mb-2">
+                                        <Form.Label className="small mb-1">Transformation</Form.Label>
+                                        <div className="d-flex">
+                                          <Form.Select
                                             size="sm"
-                                            onClick={() => {
-                                              // Toggle the form visibility
-                                              setVisibleTransformationForm(visibleTransformationForm === index ? null : index);
+                                            value={mapping.transformation ? mapping.transformation.type : 'direct'}
+                                            onChange={(e) => {
+                                              if (e.target.value === 'none') {
+                                                handleRemoveTransformation(index);
+                                                setVisibleTransformationForm(null); // Hide the form
+                                              } else {
+                                                handleAddTransformation(index, e.target.value);                                      
+                                              }
                                             }}
                                           >
-                                            {visibleTransformationForm === index ? (
-                                              <span>&#9650;</span>
-                                            ) : (
-                                              <span>&#9998;</span>
-                                            )}
-                                          </Button>
-                                        )}
-                                      </div>
-                                    </Form.Group>
-                                    
-                                    {mapping.transformation && visibleTransformationForm === index && (
-                                      <div className="bg-dark p-1 rounded small">
-                                        {renderTransformationForm(mapping, index)}
-                                      </div>
-                                    )}
-                                  </Card.Body>
-                                </Card>
-                              ))}
+                                            <option value="direct">Direct Mapping</option>
+                                            {/* Only show date option if target field is a date */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'date' ? (
+                                                <option value="format_date">Date Format</option>
+                                              ) : null;
+                                            })()}
+                                            {/* Only show enum_map option if target field is an enum */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'enum' ? (
+                                                <option value="enum_map">Enum Mapping</option>
+                                              ) : null;
+                                            })()}
+                                            {/* Only show split string option if target field is a string */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'string' ? (
+                                                <option value="split">Split String</option>
+                                              ) : null;
+                                            })()}
+                                            {/* Only show left option if target field is a string */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'string' ? (
+                                                <option value="left">Left (First N Characters)</option>
+                                              ) : null;
+                                            })()}
+                                            {/* Only show right option if target field is a string */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'string' ? (
+                                                <option value="right">Right (Last N Characters)</option>
+                                              ) : null;
+                                            })()}
+                                            {/* Only show substring option if target field is a string */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'string' ? (
+                                                <option value="substring">Substring (From/To)</option>
+                                              ) : null;
+                                            })()}
+                                            {/* Only show replace option if target field is a string */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'string' ? (
+                                                <option value="replace">Replace Text</option>
+                                              ) : null;
+                                            })()}
+                                            {/* Only show regex option if target field is a string */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'string' ? (
+                                                <option value="regex">Regex Extract</option>
+                                              ) : null;
+                                            })()}
+                                            {/* Only show change case option if target field is a string */}
+                                            {(() => {
+                                              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                              return targetField?.data_type === 'string' ? (
+                                                <option value="case">Change Case</option>
+                                              ) : null;
+                                            })()}
+                                          </Form.Select>
+                                          {mapping.transformation && (
+                                            <Button
+                                              variant="outline-secondary"
+                                              size="sm"
+                                              onClick={() => {
+                                                // Toggle the form visibility
+                                                setVisibleTransformationForm(visibleTransformationForm === index ? null : index);
+                                              }}
+                                            >
+                                              {visibleTransformationForm === index ? (
+                                                <span>&#9650;</span>
+                                              ) : (
+                                                <span>&#9998;</span>
+                                              )}
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </Form.Group>
+                                      
+                                      {mapping.transformation && visibleTransformationForm === index && (
+                                        <div className="bg-dark p-1 rounded small">
+                                          {renderTransformationForm(mapping, index)}
+                                        </div>
+                                      )}
+                                    </Card.Body>
+                                  </Card>
+                                ))}
                             </div>
                           )}
                         </Card.Body>
@@ -1662,20 +1661,24 @@ const MappingPage = () => {
                           <Form.Control 
                             type="text" 
                             placeholder="Search fields..." 
-                            size="xs"
-                            className="form-control form-control-sm w-50 small"
-                            onChange={(e) => {
-                              // Add search functionality here
-                            }}
+                            size="sm"
+                            className="form-control form-control-sm w-50"
+                            value={sourceFieldSearch}
+                            onChange={(e) => setSourceFieldSearch(e.target.value)}
                           />
                         </Card.Header>
-                        <Card.Body style={{ maxHeight: '600px', overflow: 'auto' }}>
-                          {/* Filter out source fields that are already mapped */}
+                        <Card.Body className="custom-scrollbar" style={{ maxHeight: '600px', overflow: 'auto' }}>
                           {(() => {
                             const mappedSourceFields = mappingForm.mappings.map(m => m.source_field);
                             const unmappedSourceFields = mappingForm.source_fields.filter(
                               field => !mappedSourceFields.includes(field.name)
                             );
+                            
+                            // Filter by search term
+                            const filteredSourceFields = unmappedSourceFields.filter(field => {
+                              if (!sourceFieldSearch) return true;
+                              return field.name.toLowerCase().includes(sourceFieldSearch.toLowerCase());
+                            });
                             
                             if (unmappedSourceFields.length === 0) {
                               return (
@@ -1686,9 +1689,17 @@ const MappingPage = () => {
                               );
                             }
                             
+                            if (filteredSourceFields.length === 0) {
+                              return (
+                                <div className="text-center text-muted p-4">
+                                  <p>No fields match your search.</p>
+                                </div>
+                              );
+                            }
+                            
                             return (
                               <ListGroup>
-                                {unmappedSourceFields.map((field, index) => (
+                                {filteredSourceFields.map((field, index) => (
                                   <ListGroup.Item 
                                     key={index} 
                                     action
@@ -1734,19 +1745,23 @@ const MappingPage = () => {
                             placeholder="Search fields..." 
                             size="sm"
                             className="form-control form-control-sm w-50"
-                            onChange={(e) => {
-                              // Add search functionality here
-                            }}
+                            value={targetFieldSearch}
+                            onChange={(e) => setTargetFieldSearch(e.target.value)}
                           />
                         </Card.Header>
-                        <Card.Body style={{ maxHeight: '600px', overflow: 'auto' }}>
-                          {/* Filter out target fields that are already mapped */}
+                        <Card.Body className="custom-scrollbar" style={{ maxHeight: '600px', overflow: 'auto' }}>
                           {(() => {
                             const mappedTargetFields = mappingForm.mappings.map(m => m.target_field);
                             const targetFields = getTargetFields();
                             const unmappedTargetFields = targetFields.filter(
                               field => !mappedTargetFields.includes(field.name)
                             );
+                            
+                            // Filter by search term
+                            const filteredTargetFields = unmappedTargetFields.filter(field => {
+                              if (!targetFieldSearch) return true;
+                              return field.name.toLowerCase().includes(targetFieldSearch.toLowerCase());
+                            });
                             
                             if (unmappedTargetFields.length === 0) {
                               return (
@@ -1757,9 +1772,17 @@ const MappingPage = () => {
                               );
                             }
                             
+                            if (filteredTargetFields.length === 0) {
+                              return (
+                                <div className="text-center text-muted p-4">
+                                  <p>No fields match your search.</p>
+                                </div>
+                              );
+                            }
+                            
                             return (
                               <ListGroup>
-                                {unmappedTargetFields.map((field, index) => (
+                                {filteredTargetFields.map((field, index) => (
                                   <ListGroup.Item 
                                     key={index} 
                                     action

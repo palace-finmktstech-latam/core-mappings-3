@@ -108,53 +108,215 @@
     "name": "Bank C",
     "description": "Test",
     "bank_id": "Bank C",
-    "system_model_id": "fx-forward-v1",
+    "system_model_id": "bf0fcab5-621d-4ff0-91f9-6e6f1c571575",
     "source_fields": [
       {
-        "name": "Test",
+        "name": "String Direct",
         "data_type": "string",
-        "description": "Test",
+        "description": "String Direct",
         "required": false,
         "constraints": {}
       },
       {
-        "name": "Test 2",
+        "name": "String Split",
         "data_type": "string",
-        "description": "Test 2",
+        "description": "String Split",
         "required": false,
         "constraints": {}
       },
       {
-        "name": "Value Date",
+        "name": "String Left",
+        "data_type": "string",
+        "description": "String Left",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "String Substring",
+        "data_type": "string",
+        "description": "String Substring",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "String Replace",
+        "data_type": "string",
+        "description": "String Replace",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "String Regex",
+        "data_type": "string",
+        "description": "String Regex",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "String Caps",
+        "data_type": "string",
+        "description": "String Caps",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "Date Field",
         "data_type": "date",
-        "description": "Value date",
+        "description": "Date Field",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "Decimal Field",
+        "data_type": "decimal",
+        "description": "Decimal Field",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "Integer Field",
+        "data_type": "integer",
+        "description": "Integer Field",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "Boolean Field",
+        "data_type": "boolean",
+        "description": "Boolean Field",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "Enum Field",
+        "data_type": "enum",
+        "description": "Enum Field",
+        "required": false,
+        "constraints": {}
+      },
+      {
+        "name": "String Right",
+        "data_type": "string",
+        "description": "String Right",
         "required": false,
         "constraints": {}
       }
     ],
     "mappings": [
       {
-        "source_field": "Test",
-        "target_field": "tradeId",
+        "source_field": "String Direct",
+        "target_field": "String Direct",
+        "transformation": null
+      },
+      {
+        "source_field": "String Split",
+        "target_field": "String Split",
         "transformation": {
-          "type": "case",
+          "type": "split",
           "params": {
-            "caseType": "sentence"
+            "delimiter": "/",
+            "index": 0
           }
         }
       },
       {
-        "source_field": "Value Date",
-        "target_field": "valueDate",
+        "source_field": "String Left",
+        "target_field": "String Left",
+        "transformation": {
+          "type": "left",
+          "params": {
+            "count": 3
+          }
+        }
+      },
+      {
+        "source_field": "String Substring",
+        "target_field": "String Substring",
+        "transformation": {
+          "type": "substring",
+          "params": {
+            "startPosition": 1,
+            "length": 5
+          }
+        }
+      },
+      {
+        "source_field": "String Right",
+        "target_field": "String Right",
+        "transformation": {
+          "type": "right",
+          "params": {
+            "count": 3
+          }
+        }
+      },
+      {
+        "source_field": "String Replace",
+        "target_field": "String Replace",
+        "transformation": {
+          "type": "replace",
+          "params": {
+            "find": "abc",
+            "replace": "def",
+            "replaceAll": true
+          }
+        }
+      },
+      {
+        "source_field": "String Regex",
+        "target_field": "String Regex",
+        "transformation": null
+      },
+      {
+        "source_field": "Date Field",
+        "target_field": "Date Field",
         "transformation": {
           "type": "format_date",
           "params": {
-            "source_format": "YYYY/MM/DD"
+            "source_format": "MM/DD/YYYY"
           }
         }
+      },
+      {
+        "source_field": "Decimal Field",
+        "target_field": "Decimal Field",
+        "transformation": null
+      },
+      {
+        "source_field": "Boolean Field",
+        "target_field": "Boolean Field",
+        "transformation": null
+      },
+      {
+        "source_field": "Enum Field",
+        "target_field": "Enum Field",
+        "transformation": {
+          "type": "enum_map",
+          "params": {
+            "mapping": {
+              "Yes": "Yeah baby",
+              "No": "No way"
+            }
+          }
+        }
+      },
+      {
+        "source_field": "String Caps",
+        "target_field": "String Caps",
+        "transformation": {
+          "type": "case",
+          "params": {
+            "caseType": "upper"
+          }
+        }
+      },
+      {
+        "source_field": "Integer Field",
+        "target_field": "Integer Field",
+        "transformation": null
       }
     ],
     "created_at": "2025-03-06 18:56:35.733553",
-    "updated_at": "2025-03-07 12:31:56.417022"
+    "updated_at": "2025-03-07 14:06:07.231060"
   }
 ]
