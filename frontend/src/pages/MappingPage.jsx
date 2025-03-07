@@ -27,6 +27,7 @@ const MappingPage = () => {
   const [highlightedTargetIndex, setHighlightedTargetIndex] = useState(null);
   const [selectedMappingField, setSelectedMappingField] = useState(null);
   const [selectedFieldType, setSelectedFieldType] = useState(null); // 'source' or 'target'
+  const [visibleTransformationForm, setVisibleTransformationForm] = useState(null);
   
   // Form state
   const [mappingForm, setMappingForm] = useState({
@@ -349,6 +350,10 @@ const MappingPage = () => {
   const getSystemModelById = (id) => {
     return systemModels.find(model => model.id === id) || null;
   };
+
+  const getTargetFieldByName = (fieldName) => {
+    return getTargetFields().find(field => field.name === fieldName) || null;
+  };
   
   // Get target fields for the selected system model
   const getTargetFields = () => {
@@ -368,11 +373,11 @@ const MappingPage = () => {
     switch (type) {
       case 'format_date':
         return (
-          <div className="mt-2">
+          <div className="mt-0">
             <Row>
               <Col>
                 <Form.Group>
-                  <Form.Label className="text-dark small">Source Format</Form.Label>
+                  <Form.Label className="text-light small">Source Format</Form.Label>
                   <Form.Select
                     value={params.source_format || ''}
                     onChange={(e) => handleUpdateTransformationParams(index, { source_format: e.target.value })}
@@ -386,94 +391,156 @@ const MappingPage = () => {
                     <option value="MM-DD-YYYY">MM-DD-YYYY</option>
                     <option value="YYYY-MM-DD">YYYY-MM-DD</option>
                   </Form.Select>
-                  <Form.Text className="dark-text">
-                    Format of the date in the source data
+                  <Form.Text className="text-light small">
+                    <i>Format of the date in the source data</i>
                   </Form.Text>
                 </Form.Group>
               </Col>
               <Col>
                 <Form.Group>
-                  <Form.Label className="text-dark small">Target Format</Form.Label>
+                  <Form.Label className="text-light small">Target Format</Form.Label>
                   <br></br>                 
-                  <Form.Text className="dark-text">
+                  <Form.Text className="text-light small">
                     <strong>{getTargetDateFormat(mapping.target_field)}</strong>
                   </Form.Text>
                 </Form.Group>
               </Col>
+              <div className="d-flex justify-content-end align-items-center">
+                <Button
+                  variant="success"
+                  size="sm"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={() => {
+                    // Here we'll save the date mappings
+                    // This can just close the current edit mode or perform additional validation
+                    // For now it's essentially confirming the current state of the mappings
+                    
+                    // You could add a visual confirmation
+                    showAlertMessage('Date transformation applied but not saved. Press Save to save all changes.', 'success');
+
+                    // Hide the transformation form
+                    // We need to add state to track which transformation forms are visible
+                    setVisibleTransformationForm(null);
+                    
+                    // If you need to perform additional actions when saving, add them here
+                  }}
+                >
+                  OK
+                </Button>
+              </div>
             </Row>
           </div>
         );
         
       case 'enum_map':
         return (
-          <div className="mt-2">
-            <Form.Label>Value Mappings</Form.Label>
-            {Object.entries(params.mapping || {}).map(([sourceValue, targetValue], i) => (
-              <Row key={i} className="mb-2">
-                <Col>
-                  <Form.Control
-                    type="text"
-                    placeholder="Source value"
-                    value={sourceValue}
-                    onChange={(e) => {
-                      const newMapping = { ...params.mapping };
-                      const oldValue = targetValue;
-                      delete newMapping[sourceValue];
-                      newMapping[e.target.value] = oldValue;
-                      handleUpdateTransformationParams(index, { mapping: newMapping });
-                    }}
-                  />
-                </Col>
-                <Col xs="auto">
-                  <div className="pt-2">→</div>
-                </Col>
-                <Col>
-                  <Form.Control
-                    type="text"
-                    placeholder="Target value"
-                    value={targetValue}
-                    onChange={(e) => {
-                      const newMapping = { ...params.mapping };
-                      newMapping[sourceValue] = e.target.value;
-                      handleUpdateTransformationParams(index, { mapping: newMapping });
-                    }}
-                  />
-                </Col>
-                <Col xs="auto">
-                  <Button 
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => {
-                      const newMapping = { ...params.mapping };
-                      delete newMapping[sourceValue];
-                      handleUpdateTransformationParams(index, { mapping: newMapping });
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </Col>
-              </Row>
-            ))}
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={() => {
-                const newMapping = { ...params.mapping, '': '' };
-                handleUpdateTransformationParams(index, { mapping: newMapping });
-              }}
-            >
-              Add Value Mapping
-            </Button>
+          <div className="mt-0 bg-dark">
+            <Form.Label className="text-light small"><i>Value Mappings</i></Form.Label>
+            {Object.entries(params.mapping || {}).map(([sourceValue, targetValue], i) => {
+              // Get target field to find available enum values
+              const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+              const enumValues = targetField?.constraints?.values || [];
+              console.log("enumValues: ",enumValues);
+              
+              return (
+                <Row key={i} className="mb-2">
+                  <Col>
+                    <Form.Control
+                      type="text"
+                      placeholder="Source value"
+                      value={sourceValue}
+                      style={{ color: 'white', fontSize: '0.75rem' }}
+                      onChange={(e) => {
+                        const newMapping = { ...params.mapping };
+                        const oldValue = targetValue;
+                        delete newMapping[sourceValue];
+                        newMapping[e.target.value] = oldValue;
+                        handleUpdateTransformationParams(index, { mapping: newMapping });
+                      }}
+                    />
+                  </Col>
+                  <Col xs="auto">
+                    <div className="pt-2">→</div>
+                  </Col>
+                  <Col>
+                    {/* Dropdown for target values instead of free text */}
+                    <Form.Select
+                      value={targetValue}
+                      onChange={(e) => {
+                        const newMapping = { ...params.mapping };
+                        newMapping[sourceValue] = e.target.value;
+                        handleUpdateTransformationParams(index, { mapping: newMapping });
+                      }}
+                      style={{ color: 'white', fontSize: '0.75rem' }}
+                    >
+                      <option value="">Select target value</option>
+                      {enumValues.map((enumValue, j) => (
+                        <option key={j} value={enumValue}>
+                          {enumValue}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Col>
+                  <Col xs="auto">
+                    <Button 
+                      variant="outline-danger" 
+                      size="sm"
+                      className="btn-sm py-0 px-1"
+                      onClick={() => {
+                        const newMapping = { ...params.mapping };
+                        delete newMapping[sourceValue];
+                        handleUpdateTransformationParams(index, { mapping: newMapping });
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </Col>
+                </Row>
+              );
+            })}
+            <div className="d-flex justify-content-between align-items-center">
+              <Button
+                variant="outline-primary"
+                size="sm"
+                style={{ fontSize: '0.75rem' }}
+                onClick={() => {
+                  const newMapping = { ...params.mapping, '': '' };
+                  handleUpdateTransformationParams(index, { mapping: newMapping });
+                }}
+              >
+                Add Value Mapping
+              </Button>
+              <Button
+                variant="success"
+                size="sm"
+                style={{ fontSize: '0.75rem' }}
+                onClick={() => {
+                  // Here we'll save the value mappings
+                  // This can just close the current edit mode or perform additional validation
+                  // For now it's essentially confirming the current state of the mappings
+                  
+                  // You could add a visual confirmation
+                  showAlertMessage('Value mappings transformation applied but not saved. Press Save to save all changes.', 'success');
+                  
+                  // Hide the transformation form
+                  // We need to add state to track which transformation forms are visible
+                  setVisibleTransformationForm(null);
+                  // If you need to perform additional actions when saving, add them here
+                }}
+              >
+                OK
+              </Button>
+            </div>
           </div>
         );
         
       case 'split':
         return (
-          <div className="mt-2">
+          <div className="mt-0">
             <Row>
               <Col>
                 <Form.Group>
-                  <Form.Label className="text-dark small">Delimiter</Form.Label>
+                  <Form.Label className="text-light small">Delimiter</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="e.g., ,"
@@ -485,7 +552,7 @@ const MappingPage = () => {
               </Col>
               <Col>
                 <Form.Group>
-                  <Form.Label className="text-dark small">Index (0-based)</Form.Label>
+                  <Form.Label className="text-light small">Index (0-based)</Form.Label>
                   <Form.Control
                     type="number"
                     placeholder="e.g., 0"
@@ -496,11 +563,377 @@ const MappingPage = () => {
                 </Form.Group>
               </Col>
             </Row>
+            <Row>
+              <div className="d-flex justify-content-end align-items-center" style={{ paddingTop: '10px' }}>
+                <br></br>
+                <Button
+                  variant="success"
+                  size="sm"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={() => {
+                    // Here we'll save the date mappings
+                    // This can just close the current edit mode or perform additional validation
+                    // For now it's essentially confirming the current state of the mappings
+                    
+                    // You could add a visual confirmation
+                    showAlertMessage('Split String transformation applied but not saved. Press Save to save all changes.', 'success');
+
+                    // Hide the transformation form
+                    // We need to add state to track which transformation forms are visible
+                    setVisibleTransformationForm(null);
+                    
+                    // If you need to perform additional actions when saving, add them here
+                  }}
+                >
+                  OK
+                </Button>
+              </div>
+            </Row>
           </div>
         );
+      
+        case 'left':
+          return (
+            <div className="mt-0">
+              <Form.Group>
+                <Form.Label className="text-light small">Number of Characters</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="e.g., 5"
+                  value={params.count || ''}
+                  onChange={(e) => {
+                    // Allow empty string or digits
+                    if (e.target.value === '' || /^\d+$/.test(e.target.value)) {
+                      // Check minimum value when converting to number
+                      const numValue = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                      if (numValue === '' || numValue >= 0) { // Apply minimum value check here
+                        handleUpdateTransformationParams(index, { count: numValue });
+                      }
+                    }
+                  }}
+                  style={{ fontSize: '0.75rem' }}
+                  required
+                />
+                <Form.Text className="text-muted">
+                  <i>Extracts the specified number of characters from the beginning of the text</i>
+                </Form.Text>
+                <div className="d-flex justify-content-end align-items-center">
+                  <Button
+                    variant="success"
+                    size="sm"
+                    style={{ fontSize: '0.75rem' }}
+                    onClick={() => {
+                      // Here we'll save the date mappings
+                      // This can just close the current edit mode or perform additional validation
+                      // For now it's essentially confirming the current state of the mappings
+                      
+                      // You could add a visual confirmation
+                      showAlertMessage('Left string transformation applied but not saved. Press Save to save all changes.', 'success');
+
+                      // Hide the transformation form
+                      // We need to add state to track which transformation forms are visible
+                      setVisibleTransformationForm(null);
+                      
+                      // If you need to perform additional actions when saving, add them here
+                    }}
+                  >
+                    OK
+                  </Button>
+                </div>
+              </Form.Group>
+            </div>
+          );
         
+        case 'right':
+          return (
+            <div className="mt-0">
+              <Form.Group>
+                <Form.Label className="text-light small">Number of Characters</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="e.g., 5"
+                  value={params.count || ''}
+                  onChange={(e) => {
+                    // Allow empty string or digits
+                    if (e.target.value === '' || /^\d+$/.test(e.target.value)) {
+                      // Check minimum value when converting to number
+                      const numValue = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                      if (numValue === '' || numValue >= 0) { // Apply minimum value check here
+                        handleUpdateTransformationParams(index, { count: numValue });
+                      }
+                    }
+                  }}
+                  style={{ fontSize: '0.75rem' }}
+                  required
+                />
+                <Form.Text className="text-muted">
+                  <i>Extracts the specified number of characters from the end of the text</i>
+                </Form.Text>
+                <div className="d-flex justify-content-end align-items-center">
+                  <Button
+                    variant="success"
+                    size="sm"
+                    style={{ fontSize: '0.75rem' }}
+                    onClick={() => {
+                      // Here we'll save the date mappings
+                      // This can just close the current edit mode or perform additional validation
+                      // For now it's essentially confirming the current state of the mappings
+                      
+                      // You could add a visual confirmation
+                      showAlertMessage('Right string transformation applied but not saved. Press Save to save all changes.', 'success');
+
+                      // Hide the transformation form
+                      // We need to add state to track which transformation forms are visible
+                      setVisibleTransformationForm(null);
+                      
+                      // If you need to perform additional actions when saving, add them here
+                    }}
+                  >
+                    OK
+                  </Button>
+                </div>
+              </Form.Group>
+            </div>
+          );
+        
+        case 'substring':
+          return (
+            <div className="mt-0">
+              <Row>
+                <Col>
+                  <Form.Group>
+                    <Form.Label className="text-light small">Start Position</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="e.g., 5"
+                      value={params.startPosition || ''}
+                      onChange={(e) => {
+                        // Allow empty string or digits
+                        if (e.target.value === '' || /^\d+$/.test(e.target.value)) {
+                          // Check minimum value when converting to number
+                          const numValue = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                          if (numValue === '' || numValue >= 0) { // Apply minimum value check here
+                            handleUpdateTransformationParams(index, { startPosition: numValue });
+                          }
+                        }
+                      }}
+                      style={{ fontSize: '0.75rem' }}
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+                <Col>
+                  <Form.Group>
+                    <Form.Label className="text-light small">Length</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="e.g., 5"
+                      value={params.length || ''}
+                      onChange={(e) => {
+                        // Allow empty string or digits
+                        if (e.target.value === '' || /^\d+$/.test(e.target.value)) {
+                          // Check minimum value when converting to number
+                          const numValue = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                          if (numValue === '' || numValue >= 0) { // Apply minimum value check here
+                            handleUpdateTransformationParams(index, { length: numValue });
+                          }
+                        }
+                      }}
+                      style={{ fontSize: '0.75rem' }}
+                      required
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+              <div className="d-flex justify-content-end align-items-center">
+              <Form.Text className="text-muted">
+                <i>Extracts text from the specified position. The first character is at position 0.</i>
+              </Form.Text>
+              
+                <Button
+                  variant="success"
+                  size="sm"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={() => {
+                    // Here we'll save the date mappings
+                    // This can just close the current edit mode or perform additional validation
+                    // For now it's essentially confirming the current state of the mappings
+                    
+                    // You could add a visual confirmation
+                    showAlertMessage('Substring transformation applied but not saved. Press Save to save all changes.', 'success');
+
+                    // Hide the transformation form
+                    // We need to add state to track which transformation forms are visible
+                    setVisibleTransformationForm(null);
+                    
+                    // If you need to perform additional actions when saving, add them here
+                  }}
+                >
+                  OK
+                </Button>
+              </div>
+            </div>
+          );
+        
+        case 'replace':
+          return (
+            <div className="mt-0">
+              <Row>
+                <Col>
+                  <Form.Group>
+                    <Form.Label className="text-light small">Find</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="Text to find"
+                      value={params.find || ''}
+                      onChange={(e) => handleUpdateTransformationParams(index, { find: e.target.value })}
+                      style={{ fontSize: '0.75rem' }}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col>
+                  <Form.Group>
+                    <Form.Label className="text-light small">Replace With</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="Replace with"
+                      value={params.replace || ''}
+                      onChange={(e) => handleUpdateTransformationParams(index, { replace: e.target.value })}
+                      style={{ fontSize: '0.75rem' }}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+              <Form.Group className="mt-2">
+                <div className="d-flex justify-content-end align-items-center">
+                  <Button
+                    variant="success"
+                    size="sm"
+                    style={{ fontSize: '0.75rem' }}
+                    onClick={() => {
+                      // Here we'll save the date mappings
+                      // This can just close the current edit mode or perform additional validation
+                      // For now it's essentially confirming the current state of the mappings
+                      
+                      // You could add a visual confirmation
+                      showAlertMessage('Replace string transformation applied but not saved. Press Save to save all changes.', 'success');
+
+                      // Hide the transformation form
+                      // We need to add state to track which transformation forms are visible
+                      setVisibleTransformationForm(null);
+                      
+                      // If you need to perform additional actions when saving, add them here
+                      handleUpdateTransformationParams(index, { replaceAll: true }); // Ensure replaceAll is set to true
+                    }}
+                  >
+                    OK
+                  </Button>
+                </div>
+              </Form.Group>
+            </div>
+          );
+        
+        case 'regex':
+          return (
+            <div className="mt-0">
+              <Form.Group>
+                <Form.Label className="text-light small">Pattern</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="e.g., \d{3}-\d{2}-\d{4}"
+                  value={params.pattern || ''}
+                  onChange={(e) => handleUpdateTransformationParams(index, { pattern: e.target.value })}
+                  style={{ fontSize: '0.75rem' }}
+                />
+                <Form.Text className="text-muted">
+                  <i>Regular expression pattern to match</i>
+                </Form.Text>
+              </Form.Group>
+              <Form.Group className="mt-2">
+                <Form.Label className="text-light small">Group Index</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="0"
+                  placeholder="e.g., 1"
+                  value={params.group || 0}
+                  onChange={(e) => handleUpdateTransformationParams(index, { group: parseInt(e.target.value, 10) })}
+                  style={{ fontSize: '0.75rem' }}
+                />
+                <Form.Text className="text-muted">
+                  <i>Capture group to extract (0 for entire match, 1 for first group, etc.)</i>
+                </Form.Text>
+                <div className="d-flex justify-content-end align-items-center">
+                  <Button
+                    variant="success"
+                    size="sm"
+                    style={{ fontSize: '0.75rem' }}
+                    onClick={() => {
+                      // Here we'll save the date mappings
+                      // This can just close the current edit mode or perform additional validation
+                      // For now it's essentially confirming the current state of the mappings
+                      
+                      // You could add a visual confirmation
+                      showAlertMessage('Regex string transformation applied but not saved. Press Save to save all changes.', 'success');
+
+                      // Hide the transformation form
+                      // We need to add state to track which transformation forms are visible
+                      setVisibleTransformationForm(null);
+                      
+                      // If you need to perform additional actions when saving, add them here
+                    }}
+                  >
+                    OK
+                  </Button>
+                </div>
+              </Form.Group>
+            </div>
+          );
+        
+        case 'case':
+          return (
+            <div className="mt-0">
+              <Form.Group>
+                <Form.Label className="text-light small">Case Transformation</Form.Label>
+                <Form.Select
+                  value={params.caseType || 'upper'}
+                  onChange={(e) => handleUpdateTransformationParams(index, { caseType: e.target.value })}
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  <option value="upper">TO ALL UPPERCASE</option>
+                  <option value="lower">to all lowercase</option>
+                  <option value="title">To Title Case</option>
+                  <option value="sentence">To sentence case</option>
+                </Form.Select>
+                <br></br>
+                <div className="d-flex justify-content-end align-items-center">
+                  <Button
+                    variant="success"
+                    size="sm"
+                    style={{ fontSize: '0.75rem' }}
+                    onClick={() => {
+                      // Here we'll save the date mappings
+                      // This can just close the current edit mode or perform additional validation
+                      // For now it's essentially confirming the current state of the mappings
+                      
+                      // You could add a visual confirmation
+                      showAlertMessage('Regex string transformation applied but not saved. Press Save to save all changes.', 'success');
+
+                      // Hide the transformation form
+                      // We need to add state to track which transformation forms are visible
+                      setVisibleTransformationForm(null);
+                      
+                      // If you need to perform additional actions when saving, add them here
+                    }}
+                  >
+                    OK
+                  </Button>
+                </div>
+              </Form.Group>
+            </div>
+          );
+
       default:
-        return <div className="mt-2 text-dark small">No parameters needed for this transformation type.</div>;
+        return <div className="mt-0 text-light small">No parameters needed for this transformation type.</div>;
     }
   };
   
@@ -642,7 +1075,7 @@ const MappingPage = () => {
   
   const getTargetDateFormat = (fieldName) => {
     const targetField = getTargetFields().find(field => field.name === fieldName);
-    console.log(targetField);
+    
     return targetField?.constraints.date_format || 'System default format';
   };
   
@@ -1096,32 +1529,119 @@ const MappingPage = () => {
                                       className="btn-sm py-0 px-1"
                                       onClick={() => handleRemoveMapping(index)}
                                     >
-                                      <i className="bi bi-x"></i>
+                                      x
                                     </Button>
                                   </Card.Header>
                                   <Card.Body className="py-2">
                                     <Form.Group className="mb-2">
                                       <Form.Label className="small mb-1">Transformation</Form.Label>
-                                      <Form.Select
-                                        size="sm"
-                                        value={mapping.transformation ? mapping.transformation.type : 'direct'}
-                                        onChange={(e) => {
-                                          if (e.target.value === 'none') {
-                                            handleRemoveTransformation(index);
-                                          } else {
-                                            handleAddTransformation(index, e.target.value);
-                                          }
-                                        }}
-                                      >
-                                        <option value="direct">Direct Mapping</option>
-                                        <option value="format_date">Date Format</option>
-                                        <option value="enum_map">Enum Mapping</option>
-                                        <option value="split">Split String</option>
-                                      </Form.Select>
+                                      <div className="d-flex">
+                                        <Form.Select
+                                          size="sm"
+                                          value={mapping.transformation ? mapping.transformation.type : 'direct'}
+                                          onChange={(e) => {
+                                            if (e.target.value === 'none') {
+                                              handleRemoveTransformation(index);
+                                              setVisibleTransformationForm(null); // Hide the form
+                                            } else {
+                                              handleAddTransformation(index, e.target.value);                                      
+                                            }
+                                          }}
+                                        >
+                                          <option value="direct">Direct Mapping</option>
+                                          {/* Only show date option if target field is a date */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            console.log("targetField: ",targetField);
+                                            return targetField?.data_type === 'date' ? (
+                                              <option value="format_date">Date Format</option>
+                                            ) : null;
+                                          })()}
+                                          {/* Only show enum_map option if target field is an enum */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            return targetField?.data_type === 'enum' ? (
+                                              <option value="enum_map">Enum Mapping</option>
+                                            ) : null;
+                                          })()}
+                                          {/* Only show split string option if target field is a string */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            console.log("targetField: ",targetField);
+                                            return targetField?.data_type === 'string' ? (
+                                              <option value="split">Split String</option>
+                                            ) : null;
+                                          })()}
+                                          {/* Only show left option if target field is a string */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            console.log("targetField: ",targetField);
+                                            return targetField?.data_type === 'string' ? (
+                                              <option value="left">Left (First N Characters)</option>
+                                            ) : null;
+                                          })()}
+                                          {/* Only show right option if target field is a string */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            console.log("targetField: ",targetField);
+                                            return targetField?.data_type === 'string' ? (
+                                              <option value="right">Right (Last N Characters)</option>
+                                            ) : null;
+                                          })()}
+                                          {/* Only show substring option if target field is a string */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            console.log("targetField: ",targetField);
+                                            return targetField?.data_type === 'string' ? (
+                                              <option value="substring">Substring (From/To)</option>
+                                            ) : null;
+                                          })()}
+                                          {/* Only show replace option if target field is a string */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            console.log("targetField: ",targetField);
+                                            return targetField?.data_type === 'string' ? (
+                                              <option value="replace">Replace Text</option>
+                                            ) : null;
+                                          })()}
+                                          {/* Only show regex option if target field is a string */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            console.log("targetField: ",targetField);
+                                            return targetField?.data_type === 'string' ? (
+                                              <option value="regex">Regex Extract</option>
+                                            ) : null;
+                                          })()}
+                                          {/* Only show change case option if target field is a string */}
+                                          {(() => {
+                                            const targetField = getTargetFields().find(field => field.name === mapping.target_field);
+                                            console.log("targetField: ",targetField);
+                                            return targetField?.data_type === 'string' ? (
+                                              <option value="case">Change Case</option>
+                                            ) : null;
+                                          })()}
+                                        </Form.Select>
+                                        {mapping.transformation && (
+                                          <Button
+                                            variant="outline-secondary"
+                                            size="sm"
+                                            onClick={() => {
+                                              // Toggle the form visibility
+                                              setVisibleTransformationForm(visibleTransformationForm === index ? null : index);
+                                            }}
+                                          >
+                                            {visibleTransformationForm === index ? (
+                                              <span>&#9650;</span>
+                                            ) : (
+                                              <span>&#9998;</span>
+                                            )}
+                                          </Button>
+                                        )}
+                                      </div>
                                     </Form.Group>
                                     
-                                    {mapping.transformation && (
-                                      <div className="bg-light p-2 rounded small">
+                                    {mapping.transformation && visibleTransformationForm === index && (
+                                      <div className="bg-dark p-1 rounded small">
                                         {renderTransformationForm(mapping, index)}
                                       </div>
                                     )}
