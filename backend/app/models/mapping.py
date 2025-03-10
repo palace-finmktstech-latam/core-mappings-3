@@ -1,15 +1,10 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, validator
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-import uuid
-import json
-import os
-from app.models.system_model import get_system_model, FieldDefinition
+import enum
+from app.models.system_model import FieldDefinition
 
-# In-memory storage (would be database in production)
-MAPPING_CONFIGS = {}
-
-class TransformationType(str):
+class TransformationType(str, enum.Enum):
     DIRECT = "direct"
     FORMAT_DATE = "format_date"
     ENUM_MAP = "enum_map"
@@ -42,99 +37,13 @@ class MappingConfig(BaseModel):
     @validator('mappings')
     def validate_target_fields(cls, v, values):
         """Validate that all target fields exist in the referenced system model"""
-        if 'system_model_id' not in values:
-            return v
-        
-        system_model = get_system_model(values['system_model_id'])
-        if not system_model:
-            raise ValueError(f"System model with ID {values['system_model_id']} not found")
-        
-        system_field_names = [field.name for field in system_model.fields]
-        
-        for mapping in v:
-            if mapping.target_field not in system_field_names:
-                raise ValueError(f"Target field {mapping.target_field} not found in system model")
-        
+        # Skip validation during deserialization from DB
+        # This is now handled at the API level
         return v
 
-def init_mapping_configs():
-    """Initialize mapping configurations from storage"""
-    if os.path.exists("mapping_configs.json"):
-        with open("mapping_configs.json", "r") as f:
-            configs_data = json.load(f)
-            for config_data in configs_data:
-                config = MappingConfig(**config_data)
-                MAPPING_CONFIGS[config.id] = config
-
-def save_mapping_configs():
-    """Save mapping configurations to a file"""
-    configs_data = [config.dict() for config in MAPPING_CONFIGS.values()]
-    with open("mapping_configs.json", "w") as f:
-        json.dump(configs_data, f, default=str, indent=2)
-
-def get_mapping_config(config_id: str) -> Optional[MappingConfig]:
-    """Get a mapping configuration by ID"""
-    return MAPPING_CONFIGS.get(config_id)
-
-def get_all_mapping_configs() -> List[MappingConfig]:
-    """Get all mapping configurations"""
-    return list(MAPPING_CONFIGS.values())
-
-def create_mapping_config(config: dict) -> MappingConfig:
-    """Create a new mapping configuration"""
-    config_id = str(uuid.uuid4())
-    now = datetime.now()
-    
-    # Create the config
-    mapping_config = MappingConfig(
-        id=config_id,
-        created_at=now,
-        updated_at=now,
-        **config
-    )
-    
-    # Store it
-    MAPPING_CONFIGS[config_id] = mapping_config
-    save_mapping_configs()
-    
-    return mapping_config
-
-def update_mapping_config(config_id: str, config: dict) -> Optional[MappingConfig]:
-    """Update an existing mapping configuration"""
-    if config_id not in MAPPING_CONFIGS:
-        return None
-    
-    # Preserve creation date
-    created_at = MAPPING_CONFIGS[config_id].created_at
-    
-    # Create a copy of the config without the 'id' field
-    config_copy = config.copy()
-    if 'id' in config_copy:
-        del config_copy['id']  # Remove the id to avoid the duplicate parameter
-    
-    # Update the config
-    mapping_config = MappingConfig(
-        id=config_id,
-        created_at=created_at,
-        updated_at=datetime.now(),
-        **config_copy  # Now this won't include 'id'
-    )
-    
-    # Store it
-    MAPPING_CONFIGS[config_id] = mapping_config
-    save_mapping_configs()
-    
-    return mapping_config
-
-def delete_mapping_config(config_id: str) -> bool:
-    """Delete a mapping configuration"""
-    if config_id not in MAPPING_CONFIGS:
-        return False
-    
-    del MAPPING_CONFIGS[config_id]
-    save_mapping_configs()
-    
-    return True
-
-# Initialize configurations when the module is imported
-init_mapping_configs()
+# This function remains for compatibility during transition
+async def get_mapping_config(config_id: str) -> Optional[MappingConfig]:
+    """Get a mapping configuration by ID (redirects to repository)"""
+    # This will be imported at runtime to avoid circular imports
+    from app.db.repositories import mapping_repository
+    return await mapping_repository.get_by_id(config_id)

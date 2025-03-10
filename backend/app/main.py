@@ -3,6 +3,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import system_models, mappings
 import logging
+import os
+from dotenv import load_dotenv
+from app.db.database import connect_to_mongo, close_mongo_connection
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -28,6 +34,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Connect to MongoDB on startup and initialize data
+@app.on_event("startup")
+async def startup_db_client():
+    await connect_to_mongo()
+    
+    # Initialize default system models if needed
+    from app.db.repositories import system_model_repository
+    await system_model_repository.init_default_models()
+
+# Close MongoDB connection on shutdown
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    await close_mongo_connection()
 
 # Include API routes
 app.include_router(system_models.router, prefix="/api/system-models", tags=["system-models"])
