@@ -71,6 +71,9 @@ const MappingPage = () => {
   const [sourceFieldSearch, setSourceFieldSearch] = useState('');
   const [targetFieldSearch, setTargetFieldSearch] = useState('');
   
+  // Add this state variable to track the active tab
+  const [activeTab, setActiveTab] = useState('basic');
+  
   // Fetch data on component mount
   useEffect(() => {
     loadData();
@@ -1304,6 +1307,23 @@ const MappingPage = () => {
     return targetField?.constraints.date_format || 'System default format';
   };
   
+  // Add these functions to handle tab navigation
+  const handleNextTab = () => {
+    if (activeTab === 'basic') {
+      setActiveTab('fields');
+    } else if (activeTab === 'fields') {
+      setActiveTab('mapping');
+    }
+  };
+
+  const handlePrevTab = () => {
+    if (activeTab === 'mapping') {
+      setActiveTab('fields');
+    } else if (activeTab === 'fields') {
+      setActiveTab('basic');
+    }
+  };
+  
   return (
     <div className="mapping-page">
       <h5 className="mb-4 text-end fw-bold">Data Mapping</h5>
@@ -1524,8 +1544,13 @@ const MappingPage = () => {
           </div>
         </Modal.Header>
         <Modal.Body>
-          <Tabs defaultActiveKey="basic">
+          <Tabs 
+            activeKey={activeTab} 
+            onSelect={(k) => setActiveTab(k)}
+            id="mapping-tabs"
+          >
             <Tab eventKey="basic" title="Basic Information">
+              {/* Basic Information tab content */}
               <Form className="mt-3">
                 <Form.Group className="mb-3">
                   <Form.Label>Name</Form.Label>
@@ -1586,6 +1611,7 @@ const MappingPage = () => {
             </Tab>
             
             <Tab eventKey="fields" title="Source Fields">
+              {/* Source Fields tab content */}
               <div className="mt-3">
                 <Form.Group className="mb-4">
                   <Form.Label>Upload Sample File</Form.Label>
@@ -1744,6 +1770,7 @@ const MappingPage = () => {
             </Tab>
             
             <Tab eventKey="mapping" title="Field Mappings">
+              {/* Field Mappings tab content */}
               <div className="mt-3">
                 {loading ? (
                   <div className="text-center p-5">
@@ -2082,15 +2109,55 @@ const MappingPage = () => {
               </div>
             </Tab>            
           </Tabs>
+          
+          {/* Tab Navigation Buttons */}
+          <div className="d-flex justify-content-end mt-4">
+            <Button 
+              variant="outline-secondary" 
+              onClick={() => setShowMappingModal(false)}
+              className="me-2"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="outline-secondary" 
+              onClick={handlePrevTab}
+              disabled={activeTab === 'basic'}
+              className="me-2"
+            >
+              <i className="bi bi-arrow-left me-1"></i> Back
+            </Button>
+            <Button 
+              variant="outline-secondary" 
+              onClick={handleNextTab}
+              disabled={activeTab === 'mapping'}
+              className="me-2"
+            >
+              <i className="bi bi-arrow-right me-1"></i> Next
+            </Button>
+            <Button 
+              variant="primary" 
+              onClick={handleSaveMapping}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Spinner
+                    as="span"
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    aria-hidden="true"
+                    className="me-2"
+                  />
+                  Saving...
+                </>
+              ) : (
+                'Save Mapping'
+              )}
+            </Button>
+          </div>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowMappingModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveMapping}>
-            Save
-          </Button>
-        </Modal.Footer>
       </Modal>
       
       {/* Test Modal */}

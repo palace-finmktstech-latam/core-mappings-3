@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Card, Button, Form, Row, Col, ListGroup, 
-  Modal, Alert, Tabs, Tab 
+  Modal, Alert, Tabs, Tab, Spinner 
 } from 'react-bootstrap';
 import { getSystemModels, createSystemModel, updateSystemModel, deleteSystemModel } from '../services/systemModels';
 
@@ -56,6 +56,9 @@ const AdminPage = () => {
   const [dateFormatPreview, setDateFormatPreview] = useState(
     new Date().toLocaleDateString('en-GB')  // Default preview in DD-MM-YYYY
   );
+  
+  // Add this state variable to track the active tab
+  const [activeTab, setActiveTab] = useState('general');
   
   // Fetch system models on component mount
   useEffect(() => {
@@ -559,6 +562,21 @@ const AdminPage = () => {
     }
   };
   
+  // Add these functions to handle tab navigation
+  const handleNextTab = () => {
+    if (activeTab === 'general') {
+      setActiveTab('fields');
+    }
+    // No more tabs after 'fields'
+  };
+
+  const handlePrevTab = () => {
+    if (activeTab === 'fields') {
+      setActiveTab('general');
+    }
+    // No tabs before 'general'
+  };
+  
   return (
     <div className="admin-page">
       <h5 className="mb-4 text-end fw-bold">Admin</h5>
@@ -664,7 +682,7 @@ const AdminPage = () => {
       </Row>
       
       {/* Model Edit/Create Modal */}
-      <Modal show={showModelModal} onHide={() => setShowModelModal(false)} size="xl" dialogClassName="modal-90w system-model-modal">
+      <Modal show={showModelModal} onHide={() => setShowModelModal(false)} size="xl">
         <Modal.Header closeButton>
           <Modal.Title>
             {modalMode === 'create' ? 'Create New System Model' : `Edit ${modelForm.name}`}
@@ -677,8 +695,12 @@ const AdminPage = () => {
             </Alert>
           )}
           
-          <Tabs defaultActiveKey="basic">
-            <Tab eventKey="basic" title="Basic Information">
+          <Tabs 
+            activeKey={activeTab} 
+            onSelect={(k) => setActiveTab(k)}
+            id="admin-tabs"
+          >
+            <Tab eventKey="general" title="General Information">
               <Form className="mt-3">
                 <Form.Group className="mb-3">
                   <Form.Label>Name</Form.Label>
@@ -1061,15 +1083,40 @@ const AdminPage = () => {
               </div>
             </Tab>
           </Tabs>
+          
+          {/* Tab Navigation Buttons */}
+          <div className="d-flex justify-content-end mt-4">
+            <Button 
+              variant="outline-secondary" 
+              onClick={() => setShowModelModal(false)}
+              className="me-2"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="outline-secondary" 
+              onClick={handlePrevTab}
+              disabled={activeTab === 'general'}
+              className="me-2"
+            >
+              <i className="bi bi-arrow-left me-1"></i> Back
+            </Button>
+            <Button 
+              variant="outline-secondary" 
+              onClick={handleNextTab}
+              disabled={activeTab === 'fields'}
+              className="me-2"
+            >
+              <i className="bi bi-arrow-right me-1"></i> Next
+            </Button>
+            <Button 
+              variant="primary" 
+              onClick={handleSaveModel}
+            >
+              Save System Model
+            </Button>
+          </div>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModelModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveModel}>
-            Save
-          </Button>
-        </Modal.Footer>
       </Modal>
     </div>
   );
