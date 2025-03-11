@@ -324,7 +324,69 @@ const MappingPage = () => {
   const handleShowTestModal = () => {
     if (!selectedMapping) return;
     
-    setTestData('{\n  "SAMPLE_FIELD": "sample value"\n}');
+    // Generate sample JSON based on source fields
+    const sampleData = {};
+    
+    selectedMapping.source_fields.forEach(field => {
+      // Generate appropriate sample values based on data type
+      switch (field.data_type) {
+        case 'string':
+          sampleData[field.name] = `Sample ${field.name}`;
+          break;
+        case 'integer':
+          sampleData[field.name] = 123;
+          break;
+        case 'decimal':
+          sampleData[field.name] = 123.45;
+          break;
+        case 'boolean':
+          sampleData[field.name] = true;
+          break;
+        case 'date':
+          // Find date mapping for this field if it exists
+          const dateMapping = selectedMapping.mappings.find(m => 
+            m.source_field === field.name && 
+            m.transformation?.type === 'format_date'
+          );
+          const dateFormat = dateMapping?.transformation?.params?.source_format || 'MM/DD/YYYY';
+          
+          // Generate sample date in the expected format
+          if (dateFormat.includes('DD/MM/YYYY')) {
+            sampleData[field.name] = '15/01/2024';
+          } else if (dateFormat.includes('MM/DD/YYYY')) {
+            sampleData[field.name] = '01/15/2024';
+          } else if (dateFormat.includes('YYYY/MM/DD')) {
+            sampleData[field.name] = '2024/01/15';
+          } else if (dateFormat.includes('YYYY-MM-DD')) {
+            sampleData[field.name] = '2024-01-15';
+          } else {
+            sampleData[field.name] = '01/15/2024';
+          }
+          break;
+        case 'enum':
+          // Find enum mapping for this field if it exists
+          const enumMapping = selectedMapping.mappings.find(m => 
+            m.source_field === field.name && 
+            m.transformation?.type === 'enum_map'
+          );
+          
+          // Use first enum value from mapping or a default
+          if (enumMapping?.transformation?.params?.mapping) {
+            const sourceValues = Object.keys(enumMapping.transformation.params.mapping);
+            sampleData[field.name] = sourceValues.length > 0 ? sourceValues[0] : 'Sample enum value';
+          } else {
+            sampleData[field.name] = 'Sample enum value';
+          }
+          break;
+        default:
+          sampleData[field.name] = `Sample ${field.name}`;
+      }
+    });
+    
+    // Format the sample data as pretty JSON
+    const formattedJson = JSON.stringify(sampleData, null, 2);
+    
+    setTestData(formattedJson);
     setTestResults(null);
     setShowTestModal(true);
   };
