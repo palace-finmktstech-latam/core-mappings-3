@@ -9,6 +9,7 @@ import {
   testMapping, uploadSampleFile 
 } from '../services/mappings';
 import { getSystemModels } from '../services/systemModels';
+import Papa from 'papaparse';
 
 const MappingPage = () => {
   // State
@@ -28,6 +29,14 @@ const MappingPage = () => {
   const [selectedMappingField, setSelectedMappingField] = useState(null);
   const [selectedFieldType, setSelectedFieldType] = useState(null); // 'source' or 'target'
   const [visibleTransformationForm, setVisibleTransformationForm] = useState(null);
+  const [testCsvData, setTestCsvData] = useState('');
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [csvHeaderMappings, setCsvHeaderMappings] = useState({});
+  const [testInputType, setTestInputType] = useState('json'); // 'json' or 'csv'
+  const [testCsvFile, setTestCsvFile] = useState(null);
+  const [testCsvFileName, setTestCsvFileName] = useState('');
+  const [testCsvPreview, setTestCsvPreview] = useState(null);
+
   
   // Form state
   const [mappingForm, setMappingForm] = useState({
@@ -324,7 +333,7 @@ const MappingPage = () => {
   const handleShowTestModal = () => {
     if (!selectedMapping) return;
     
-    // Generate sample JSON based on source fields
+    // Generate sample JSON based on source fields (existing code)
     const sampleData = {};
     
     selectedMapping.source_fields.forEach(field => {
@@ -385,22 +394,121 @@ const MappingPage = () => {
     
     // Format the sample data as pretty JSON
     const formattedJson = JSON.stringify(sampleData, null, 2);
-    
+
     setTestData(formattedJson);
     setTestResults(null);
+    setTestCsvFile(null);
+    setTestCsvFileName('');
+    setTestCsvPreview(null);
+    setTestInputType('json'); // Default to JSON view
     setShowTestModal(true);
   };
   
+  const handleCsvFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setTestCsvFile(file);
+    setTestCsvFileName(file.name);
+    
+    // Preview the CSV
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const csvText = event.target.result;
+      
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: true,
+        preview: 3, // Preview first few rows
+        complete: (results) => {
+          if (results.errors && results.errors.length > 0) {
+            showAlertMessage(`CSV parsing error: ${results.errors[0].message}`, 'danger');
+            return;
+          }
+          
+          if (results.data.length === 0) {
+            showAlertMessage('No data found in CSV', 'danger');
+            return;
+          }
+          
+          setTestCsvPreview(results);
+        },
+        error: (error) => {
+          showAlertMessage(`Error parsing CSV: ${error.message}`, 'danger');
+        }
+      });
+    };
+    
+    reader.readAsText(file);
+  };
+
   const handleRunTest = async () => {
     if (!selectedMapping) return;
     
     try {
       let parsedData;
-      try {
-        parsedData = JSON.parse(testData);
-      } catch (e) {
-        showAlertMessage('Invalid JSON in test data', 'danger');
-        return;
+      
+      if (testInputType === 'json') {
+        try {
+          parsedData = JSON.parse(testData);
+        } catch (e) {
+          showAlertMessage('Invalid JSON in test data', 'danger');
+          return;
+        }
+      } else {
+        // Process CSV file
+        if (!testCsvFile) {
+          showAlertMessage('Please upload a CSV file first', 'warning');
+          return;
+        }
+        
+        try {
+          // Read and parse the file
+          const fileContent = await readFileAsync(testCsvFile);
+          const results = Papa.parse(fileContent, {
+            header: true,
+            skipEmptyLines: true,
+            dynamicTyping: true
+          });
+          
+          if (results.errors && results.errors.length > 0) {
+            showAlertMessage(`CSV parsing error: ${results.errors[0].message}`, 'danger');
+            return;
+          }
+          
+          if (results.data.length === 0) {
+            showAlertMessage('No data found in CSV', 'danger');
+            return;
+          }
+          
+          // Take the first row for testing
+          const firstRow = results.data[0];
+          
+          // Map CSV headers to expected field names
+          parsedData = {};
+          
+          // Here we assume CSV headers match field names
+          // If they don't, we need to check if the field exists
+          selectedMapping.source_fields.forEach(field => {
+            if (field.name in firstRow) {
+              parsedData[field.name] = firstRow[field.name];
+            }
+          });
+          
+          // Check if any expected fields are missing
+          const missingFields = selectedMapping.source_fields
+            .filter(field => field.required && !(field.name in parsedData))
+            .map(field => field.name);
+          
+          if (missingFields.length > 0) {
+            showAlertMessage(`Missing required fields in CSV: ${missingFields.join(', ')}`, 'warning');
+            // Continue anyway to show partial results
+          }
+        } catch (e) {
+          showAlertMessage(`Error processing CSV: ${e.message}`, 'danger');
+          return;
+        }
       }
       
       setLoading(true);
@@ -413,6 +521,61 @@ const MappingPage = () => {
       setLoading(false);
     }
   };
+
+  // Helper function to read file contents
+  const readFileAsync = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => resolve(event.target.result);
+      reader.onerror = (error) => reject(error);
+      reader.readAsText(file);
+    });
+  };
+  
+    // Add this new handler for CSV header mappings
+  const handleCsvHeaderMappingChange = (sourceField, csvHeader) => {
+    setCsvHeaderMappings({
+      ...csvHeaderMappings,
+      [sourceField]: csvHeader
+    });
+  };
+  
+  // Add this function to parse CSV headers
+  const updateCsvHeaders = (csvText) => {
+    try {
+      const results = Papa.parse(csvText, {
+        preview: 1, // Parse just the first row to get headers
+        skipEmptyLines: true
+      });
+      
+      if (results.data && results.data.length > 0) {
+        const headers = results.data[0];
+        setCsvHeaders(headers);
+        
+        // Initialize mappings with matching field names
+        const newMappings = {};
+        selectedMapping.source_fields.forEach(field => {
+          // Try to find an exact match first
+          if (headers.includes(field.name)) {
+            newMappings[field.name] = field.name;
+          } else {
+            // Try to find a case-insensitive match
+            const lowerHeader = headers.find(h => h.toLowerCase() === field.name.toLowerCase());
+            if (lowerHeader) {
+              newMappings[field.name] = lowerHeader;
+            } else {
+              newMappings[field.name] = ''; // No match found
+            }
+          }
+        });
+        
+        setCsvHeaderMappings(newMappings);
+      }
+    } catch (error) {
+      console.error('Error parsing CSV headers:', error);
+    }
+  };
+  
   
   // Find a system model by ID
   const getSystemModelById = (id) => {
@@ -1942,23 +2105,115 @@ const MappingPage = () => {
             </Alert>
           )}
           
-          <Form.Group className="mb-3">
-            <Form.Label>Input Data (JSON format)</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={8}
-              value={testData}
-              onChange={(e) => setTestData(e.target.value)}
-            />
-            <Form.Text className="text-muted">
-              Enter sample data in JSON format to test the mapping.
-            </Form.Text>
-          </Form.Group>
+          <Tabs
+            activeKey={testInputType}
+            onSelect={(k) => setTestInputType(k)}
+            className="mb-3"
+          >
+            <Tab eventKey="json" title="JSON">
+              <Form.Group className="mb-3">
+                <Form.Label>Input Data (JSON format)</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={8}
+                  value={testData}
+                  onChange={(e) => setTestData(e.target.value)}
+                />
+                <Form.Text className="text-muted">
+                  Enter sample data in JSON format to test the mapping.
+                </Form.Text>
+              </Form.Group>
+            </Tab>
+            
+            <Tab eventKey="csv" title="CSV">
+              <Form.Group className="mb-3">
+                <Form.Label>Upload CSV File</Form.Label>
+                <div className="d-flex align-items-center">
+                  <Form.Control
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvFileChange}
+                  />
+                </div>
+                <Form.Text className="text-muted">
+                  Upload a CSV file with headers matching your source field names. The first data row will be used for testing.
+                </Form.Text>
+              </Form.Group>
+              
+              {testCsvPreview && (
+                <div className="mb-3">
+                  <h6>CSV Preview</h6>
+                  <div className="table-responsive">
+                    <Table size="sm" bordered hover>
+                      <thead>
+                        <tr>
+                          {testCsvPreview.meta.fields.map((field, index) => (
+                            <th key={index} className="small">
+                              {field}
+                              {selectedMapping.source_fields.find(f => f.name === field) ? (
+                                <span className="text-success ms-1">✓</span>
+                              ) : (
+                                <span className="text-danger ms-1">✗</span>
+                              )}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {testCsvPreview.data.map((row, rowIndex) => (
+                          <tr key={rowIndex}>
+                            {testCsvPreview.meta.fields.map((field, colIndex) => (
+                              <td key={colIndex} className="small">
+                                {row[field] === null ? '' : String(row[field])}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                  
+                  <div className="alert alert-info small mt-2">
+                    <strong>Column matching:</strong>
+                    <ul className="mb-0 ps-3">
+                      {testCsvPreview.meta.fields.map((field, index) => {
+                        const matchingField = selectedMapping.source_fields.find(f => f.name === field);
+                        return (
+                          <li key={index}>
+                            {field} {matchingField ? 
+                              `→ Mapped to source field "${matchingField.name}"` : 
+                              '→ Not matched to any source field'}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                  
+                  {/* Missing fields warning */}
+                  {selectedMapping.source_fields.some(field => 
+                    field.required && !testCsvPreview.meta.fields.includes(field.name)
+                  ) && (
+                    <Alert variant="warning" className="mt-2 small">
+                      <strong>Warning:</strong> Some required fields are missing in the CSV:
+                      <ul className="mb-0 mt-1">
+                        {selectedMapping.source_fields
+                          .filter(field => field.required && !testCsvPreview.meta.fields.includes(field.name))
+                          .map((field, idx) => (
+                            <li key={idx}>{field.name}</li>
+                          ))
+                        }
+                      </ul>
+                    </Alert>
+                  )}
+                </div>
+              )}
+            </Tab>
+          </Tabs>
           
           <Button 
             variant="primary" 
             onClick={handleRunTest}
-            disabled={loading}
+            disabled={loading || (testInputType === 'csv' && !testCsvFile)}
           >
             {loading ? 'Running...' : 'Run Test'}
           </Button>
