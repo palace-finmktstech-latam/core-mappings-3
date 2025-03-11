@@ -448,7 +448,7 @@ const MappingPage = () => {
                   <Form.Label className="text-light small">Source Format</Form.Label>
                   <Form.Select
                     value={params.source_format || ''}
-                    onChange={(e) => handleUpdateTransformationParams(index, { source_format: e.target.value })}
+                    onChange={(e) => handleUpdateTransformationParams(index, { source_format: e.target.value }, {target_format: getTargetDateFormat(mapping.target_field)})}
                     style={{ fontSize: '0.75rem' }}
                   >
                     <option value="">Select a format</option>
@@ -480,8 +480,8 @@ const MappingPage = () => {
                   style={{ fontSize: '0.75rem' }}
                   onClick={() => {
                     // Here we'll save the date mappings
-                    // This can just close the current edit mode or perform additional validation
-                    // For now it's essentially confirming the current state of the mappings
+                    handleUpdateTransformationParams(index, { source_format: params.source_format })
+                    handleUpdateTransformationParams(index, {target_format: getTargetDateFormat(mapping.target_field)})
                     
                     // You could add a visual confirmation
                     showAlertMessage('Date transformation applied but not saved. Press Save to save all changes.', 'success');
@@ -1238,7 +1238,7 @@ const MappingPage = () => {
                 </div>
                 
                 <h6 className="mt-4 mb-3">Field Mappings:</h6>
-                <Table striped bordered dark className='small' size='sm'>
+                <Table striped bordered variant='dark' className='small' size='sm'>
                   <thead>
                     <tr>
                       <th>Source Field</th>
@@ -1255,6 +1255,41 @@ const MappingPage = () => {
                           {mapping.transformation ? (
                             <div>
                               <span className="badge bg-info">{mapping.transformation.type}</span>
+                              {mapping.transformation.type === 'split' && (
+                                <div className="small mt-1">
+                                  Takes part {mapping.transformation.params?.index + 1 || '1'} from a string separated by {mapping.transformation.params?.delimiter || ''}.
+                                </div>
+                              )}
+                              {mapping.transformation.type === 'left' && (
+                                <div className="small mt-1">
+                                  Takes the first {mapping.transformation.params?.count || ''} characters from a string.
+                                </div>
+                              )}
+                              {mapping.transformation.type === 'right' && (
+                                <div className="small mt-1">
+                                  Takes the last {mapping.transformation.params?.count || ''} characters from a string.
+                                </div>
+                              )}
+                              {mapping.transformation.type === 'substring' && (
+                                <div className="small mt-1">
+                                  Takes a substring of a string, starting at position {mapping.transformation.params?.startPosition || ''} and taking the next {mapping.transformation.params?.length || ''} characters.
+                                </div>
+                              )}
+                              {mapping.transformation.type === 'replace' && (
+                                <div className="small mt-1">
+                                  Replaces all occurrences of {mapping.transformation.params?.find || ''} with {mapping.transformation.params?.replace || ''}.
+                                </div>
+                              )}
+                              {mapping.transformation.type === 'regex' && (
+                                <div className="small mt-1">
+                                  Applies a regular expression ({mapping.transformation.params?.pattern || ''}) to the string.
+                                </div>
+                              )}
+                              {mapping.transformation.type === 'case' && (
+                                <div className="small mt-1">
+                                  Converts the string to {mapping.transformation.params?.caseType || ''} case.
+                                </div>
+                              )}
                               {mapping.transformation.type === 'enum_map' && (
                                 <div className="small mt-1">
                                   {Object.entries(mapping.transformation.params?.mapping || {}).map(([s, t], i) => (

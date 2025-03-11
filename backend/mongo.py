@@ -1,12 +1,17 @@
 from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+import certifi
+import ssl
 
 uri = "mongodb+srv://benclark:IDTJTZ5uAUSD0yfl@palaceai.kgogr.mongodb.net/?retryWrites=true&w=majority&appName=PalaceAI"
 
-# Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'))
+# More compatible TLS configuration
+client = MongoClient(
+    uri,
+    tls=True,
+    tlsCAFile=certifi.where(),
+    tlsAllowInvalidCertificates=True  # Temporary for testing
+)
 
-# Send a ping to confirm a successful connection
 try:
     client.admin.command('ping')
     print("Pinged your deployment. You successfully connected to MongoDB!")

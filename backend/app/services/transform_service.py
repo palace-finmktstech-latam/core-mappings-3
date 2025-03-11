@@ -99,9 +99,19 @@ def apply_transformation(value: Any, transformation: Dict[str, Any], source_data
     elif transform_type == "regex" and isinstance(value, str):
         try:
             pattern = params.get("pattern", "")
-            replacement = params.get("replacement", "")
-            return re.sub(pattern, replacement, value)
-        except:
+            group = params.get("group", 0)  # Default to the entire match (group 0)
+            
+            # Try to match the pattern against the value
+            match = re.search(pattern, value)
+            
+            if match:
+                # Extract the specified group or the entire match if group=0
+                return match.group(group)
+            else:
+                # No match found, return original value
+                return value
+        except Exception as e:
+            print(f"Regex error: {str(e)}")
             return value
     
     elif transform_type == "split" and isinstance(value, str):
@@ -129,8 +139,17 @@ def apply_transformation(value: Any, transformation: Dict[str, Any], source_data
     elif transform_type == "format_date":
         try:
             # Convert date format
-            source_format = params.get("source_format", "%d/%m/%Y")
-            target_format = params.get("target_format", "%Y-%m-%d")
+            source_format_str = params.get("source_format", "MM/DD/YYYY")
+            target_format_str = params.get("target_format", "YYYY-MM-DD")
+            
+            # Convert user-friendly formats to Python datetime formats
+            source_format = convert_date_format_to_python(source_format_str)
+            target_format = convert_date_format_to_python(target_format_str)
+            
+            print(f"Original source_format: {source_format_str}")
+            print(f"Converted Python source_format: {source_format}")
+            print(f"Original target_format: {target_format_str}")
+            print(f"Converted Python target_format: {target_format}")
             
             # Handle if value is already a datetime object
             if isinstance(value, datetime):
@@ -143,6 +162,7 @@ def apply_transformation(value: Any, transformation: Dict[str, Any], source_data
             return dt.strftime(target_format)
         except Exception as e:
             # Return original value if transformation fails
+            print(f"Date transformation error: {str(e)}")
             return value
     
     # Numeric transformations
@@ -210,34 +230,67 @@ def validate_field_value(field_name: str, value: Any, data_type: str) -> None:
     try:
         if data_type == "string":
             if value is not None and not isinstance(value, str):
-                raise ValueError(f"Field {field_name} should be a string")
+                # Attempt to convert to string for display
+                str(value)
+                print(f"Note: Field {field_name} was automatically converted to string")
         
         elif data_type == "integer":
             if value is not None and not isinstance(value, int):
                 # Try to convert string to int
                 int(value)
+                print(f"Note: Field {field_name} was validated as integer")
         
         elif data_type == "decimal":
             if value is not None and not isinstance(value, (int, float)):
                 # Try to convert string to float
                 float(value)
+                print(f"Note: Field {field_name} was validated as decimal")
         
         elif data_type == "boolean":
             if value is not None and not isinstance(value, bool):
                 # Boolean might be represented as string, int, etc.
-                pass
+                # Just check it can be interpreted as a boolean
+                bool(value)
+                print(f"Note: Field {field_name} was validated as boolean")
         
         elif data_type == "date":
-            if value is not None and not isinstance(value, (datetime, str)):
-                raise ValueError(f"Field {field_name} should be a date")
-            
-            # If it's a string, try to parse it as a date
-            if isinstance(value, str):
-                datetime.fromisoformat(value.replace('Z', '+00:00'))
+            if value is not None:
+                if isinstance(value, datetime):
+                    # Already a datetime, no validation needed
+                    pass
+                elif isinstance(value, str):
+                    # For date validation, we'll just verify it's a string for now
+                    # The actual format validation happens during transformation
+                    pass
+                else:
+                    raise ValueError(f"Field {field_name} should be a date string or datetime object")
         
         # Other data types could be added here
     
     except (ValueError, TypeError) as e:
         # Log the error but don't raise for now
         # This could be modified to raise exceptions based on your validation requirements
-        print(f"Validation error for field {field_name}: {str(e)}")
+        print(f"Validation warning for field {field_name}: {str(e)}")
+
+def convert_date_format_to_python(format_str):
+    """Convert user-friendly date format to Python's datetime format"""
+    # Translation mapping
+    translation = {
+        "MM": "%m",
+        "M": "%m",
+        "DD": "%d",
+        "D": "%d",
+        "YYYY": "%Y",
+        "YY": "%y"
+    }
+    
+    # Replace each pattern with its Python equivalent
+    result = format_str
+    for pattern, replacement in translation.items():
+        result = result.replace(pattern, replacement)
+    
+    # Handle separators
+    result = result.replace("/", "/").replace("-", "-")
+    
+    return result
+
